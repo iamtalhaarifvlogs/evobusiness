@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
-import "./header.css";
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
