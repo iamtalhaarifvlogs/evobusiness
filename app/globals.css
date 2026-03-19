@@ -38,3 +38,16 @@ body {
 .text-muted-theme {
   color: #6b7280;
 }
+
+:root {
+  --card: #ffffff;
+  --text: #111;
+  --border: #e5e5e5;
+}
+
+[data-theme="dark"] {
+  --card: #121212;
+  --text: #ffffff;
+  --border: #2a2a2a;
+  background: #0f0f0f;
+}
