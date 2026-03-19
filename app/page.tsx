@@ -17,7 +17,14 @@ export default function HomePage() {
   };
 
   return (
-    <div className="container-fluid py-3" style={{ color: "var(--text)" }}>
+    <div
+      className="container-fluid py-3"
+      style={{
+        background: "var(--bg)",
+        color: "var(--text)",
+        minHeight: "100vh",
+      }}
+    >
 
       {/* HEADER */}
       <div className="mb-4">
@@ -32,7 +39,9 @@ export default function HomePage() {
         {stats.map((s, i) => (
           <div key={i} className="col-12 col-sm-6 col-lg-3">
             <div style={cardStyle}>
-              <div style={{ fontSize: 13, opacity: 0.7 }}>{s.label}</div>
+              <div style={{ fontSize: 13, opacity: 0.7 }}>
+                {s.label}
+              </div>
               <div style={{ fontSize: 24, fontWeight: 600 }}>
                 {s.value}
               </div>
