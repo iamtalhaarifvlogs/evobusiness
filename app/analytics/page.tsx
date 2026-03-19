@@ -16,7 +16,6 @@ import {
 export default function AnalyticsPage() {
   const [duration, setDuration] = useState("week");
 
-  // Dummy Data (Replace with API later)
   const data = [
     { name: "Mon", chats: 30, users: 10 },
     { name: "Tue", chats: 45, users: 15 },
@@ -27,18 +26,33 @@ export default function AnalyticsPage() {
     { name: "Sun", chats: 70, users: 22 },
   ];
 
-  return (
-    <div className="container-fluid py-3">
+  const cardStyle: React.CSSProperties = {
+    background: "var(--card)",
+    color: "var(--text)",
+    border: "1px solid var(--border)",
+    borderRadius: 12,
+    padding: 16,
+    boxShadow: "0 2px 10px rgba(0,0,0,0.05)",
+  };
 
+  return (
+    <div
+      className="container-fluid py-3"
+      style={{ background: "var(--card)", color: "var(--text)" }}
+    >
       {/* HEADER */}
       <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 gap-2">
         <h5 className="mb-0">Analytics</h5>
 
-        {/* Duration Selector */}
         <select
           className="form-select w-auto"
           value={duration}
           onChange={(e) => setDuration(e.target.value)}
+          style={{
+            background: "var(--card)",
+            color: "var(--text)",
+            border: "1px solid var(--border)",
+          }}
         >
           <option value="day">Today</option>
           <option value="week">This Week</option>
@@ -49,28 +63,28 @@ export default function AnalyticsPage() {
       {/* STATS CARDS */}
       <div className="row g-3 mb-3">
         <div className="col-12 col-sm-6 col-lg-3">
-          <div className="p-3 bg-white rounded shadow-sm">
+          <div style={cardStyle}>
             <h6>Total Chats</h6>
             <h4>375</h4>
           </div>
         </div>
 
         <div className="col-12 col-sm-6 col-lg-3">
-          <div className="p-3 bg-white rounded shadow-sm">
+          <div style={cardStyle}>
             <h6>Active Users</h6>
             <h4>98</h4>
           </div>
         </div>
 
         <div className="col-12 col-sm-6 col-lg-3">
-          <div className="p-3 bg-white rounded shadow-sm">
+          <div style={cardStyle}>
             <h6>Bot Responses</h6>
             <h4>290</h4>
           </div>
         </div>
 
         <div className="col-12 col-sm-6 col-lg-3">
-          <div className="p-3 bg-white rounded shadow-sm">
+          <div style={cardStyle}>
             <h6>Manual Replies</h6>
             <h4>85</h4>
           </div>
@@ -79,35 +93,40 @@ export default function AnalyticsPage() {
 
       {/* CHARTS */}
       <div className="row g-3">
-
-        {/* Line Chart */}
+        {/* LINE CHART */}
         <div className="col-12 col-lg-6">
-          <div className="p-3 bg-white rounded shadow-sm">
+          <div style={cardStyle}>
             <h6>Chats Over Time</h6>
+
             <div style={{ width: "100%", height: 300 }}>
               <ResponsiveContainer>
                 <LineChart data={data}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
+                  <XAxis dataKey="name" stroke="var(--text)" />
+                  <YAxis stroke="var(--text)" />
                   <Tooltip />
-                  <Line type="monotone" dataKey="chats" stroke="#0d6efd" />
+                  <Line
+                    type="monotone"
+                    dataKey="chats"
+                    stroke="#0d6efd"
+                  />
                 </LineChart>
               </ResponsiveContainer>
             </div>
           </div>
         </div>
 
-        {/* Bar Chart */}
+        {/* BAR CHART */}
         <div className="col-12 col-lg-6">
-          <div className="p-3 bg-white rounded shadow-sm">
+          <div style={cardStyle}>
             <h6>User Activity</h6>
+
             <div style={{ width: "100%", height: 300 }}>
               <ResponsiveContainer>
                 <BarChart data={data}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
+                  <XAxis dataKey="name" stroke="var(--text)" />
+                  <YAxis stroke="var(--text)" />
                   <Tooltip />
                   <Bar dataKey="users" fill="#198754" />
                 </BarChart>
@@ -115,7 +134,6 @@ export default function AnalyticsPage() {
             </div>
           </div>
         </div>
-
       </div>
     </div>
   );
