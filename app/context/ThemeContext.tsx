@@ -22,18 +22,29 @@ const ThemeContext = createContext<ThemeContextType | undefined>(
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   const [theme, setTheme] = useState<Theme>("light");
 
-  // ✅ SAFE INIT (runs only client-side)
+  // ✅ INIT THEME FROM LOCALSTORAGE (client only)
   useEffect(() => {
     try {
       const saved = window.localStorage.getItem("theme") as Theme | null;
-      if (saved) setTheme(saved);
+      if (saved === "light" || saved === "dark") {
+        setTheme(saved);
+      }
     } catch {}
   }, []);
 
-  // ✅ SAFE APPLY (NO SSR TOUCH)
+  // ✅ APPLY THEME GLOBALLY (IMPORTANT FIX)
   useEffect(() => {
     try {
-      document.body.dataset.theme = theme;
+      const root = document.documentElement;
+
+      // Apply attribute on <html>
+      root.setAttribute("data-theme", theme);
+
+      // Optional: also update class (useful for Tailwind hybrid setups)
+      root.classList.remove("light", "dark");
+      root.classList.add(theme);
+
+      // Persist
       window.localStorage.setItem("theme", theme);
     } catch {}
   }, [theme]);
