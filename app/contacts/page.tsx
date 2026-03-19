@@ -49,6 +49,8 @@ export default function ContactsPage() {
     border: "1px solid var(--border)",
     borderRadius: 12,
     padding: 16,
+    cursor: "pointer",
+    transition: "0.2s ease",
   };
 
   const modalStyle: React.CSSProperties = {
@@ -114,22 +116,19 @@ export default function ContactsPage() {
             <div
               style={cardStyle}
               onClick={() => setSelectedContact(contact)}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.background = "var(--border)")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.background = "var(--card)")
-              }
-              style={{
-                ...cardStyle,
-                cursor: "pointer",
-                transition: "0.2s",
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "var(--border)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "var(--card)";
               }}
             >
               <h6 className="mb-1">{contact.name}</h6>
+
               <div style={{ fontSize: 13, opacity: 0.7 }}>
                 {contact.phone}
               </div>
+
               <div style={{ fontSize: 13, opacity: 0.7 }}>
                 {contact.email}
               </div>
@@ -166,6 +165,7 @@ export default function ContactsPage() {
               }}
             >
               <h5 style={{ margin: 0 }}>{selectedContact.name}</h5>
+
               <button
                 onClick={() => setSelectedContact(null)}
                 className="btn btn-sm btn-outline-secondary"
@@ -179,7 +179,9 @@ export default function ContactsPage() {
               <p><strong>Email:</strong> {selectedContact.email}</p>
               <p>
                 <strong>Tag:</strong>{" "}
-                <span style={{ opacity: 0.8 }}>{selectedContact.tag}</span>
+                <span style={{ opacity: 0.8 }}>
+                  {selectedContact.tag}
+                </span>
               </p>
             </div>
 
@@ -207,6 +209,7 @@ export default function ContactsPage() {
               }}
             >
               <h5 style={{ margin: 0 }}>Add Contact</h5>
+
               <button
                 onClick={() => setShowAddModal(false)}
                 className="btn btn-sm btn-outline-secondary"
