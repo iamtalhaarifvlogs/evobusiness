@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import "bootstrap/dist/css/bootstrap.min.css";
 
 type Contact = {
   id: number;
@@ -44,8 +43,40 @@ export default function ContactsPage() {
     c.name.toLowerCase().includes(search.toLowerCase())
   );
 
+  const cardStyle: React.CSSProperties = {
+    background: "var(--card)",
+    color: "var(--text)",
+    border: "1px solid var(--border)",
+    borderRadius: 12,
+    padding: 16,
+  };
+
+  const modalStyle: React.CSSProperties = {
+    position: "fixed",
+    top: "50%",
+    left: "50%",
+    transform: "translate(-50%, -50%)",
+    width: "90%",
+    maxWidth: 500,
+    background: "var(--card)",
+    color: "var(--text)",
+    border: "1px solid var(--border)",
+    borderRadius: 16,
+    zIndex: 1050,
+  };
+
+  const backdropStyle: React.CSSProperties = {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    width: "100%",
+    height: "100%",
+    background: "rgba(0,0,0,0.4)",
+    zIndex: 1040,
+  };
+
   return (
-    <div className="container-fluid py-3">
+    <div className="container-fluid py-3" style={{ color: "var(--text)" }}>
 
       {/* HEADER */}
       <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 gap-2">
@@ -54,10 +85,17 @@ export default function ContactsPage() {
         <div className="d-flex gap-2 w-100 w-md-auto">
           <input
             type="text"
-            className="form-control"
             placeholder="Search contacts..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            style={{
+              flex: 1,
+              padding: 10,
+              borderRadius: 8,
+              border: "1px solid var(--border)",
+              background: "var(--card)",
+              color: "var(--text)",
+            }}
           />
 
           <button
@@ -72,24 +110,40 @@ export default function ContactsPage() {
       {/* CONTACT LIST */}
       <div className="row g-3">
         {filteredContacts.map((contact) => (
-          <div
-            key={contact.id}
-            className="col-12 col-sm-6 col-lg-4"
-          >
+          <div key={contact.id} className="col-12 col-sm-6 col-lg-4">
             <div
-              className="p-3 bg-white rounded shadow-sm h-100"
-              style={{ cursor: "pointer" }}
+              style={cardStyle}
               onClick={() => setSelectedContact(contact)}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.background = "var(--border)")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.background = "var(--card)")
+              }
+              style={{
+                ...cardStyle,
+                cursor: "pointer",
+                transition: "0.2s",
+              }}
             >
               <h6 className="mb-1">{contact.name}</h6>
-              <small className="text-muted d-block">
+              <div style={{ fontSize: 13, opacity: 0.7 }}>
                 {contact.phone}
-              </small>
-              <small className="text-muted d-block">
+              </div>
+              <div style={{ fontSize: 13, opacity: 0.7 }}>
                 {contact.email}
-              </small>
+              </div>
 
-              <span className="badge bg-secondary mt-2">
+              <span
+                style={{
+                  display: "inline-block",
+                  marginTop: 10,
+                  padding: "4px 8px",
+                  borderRadius: 8,
+                  fontSize: 12,
+                  border: "1px solid var(--border)",
+                }}
+              >
                 {contact.tag}
               </span>
             </div>
@@ -100,84 +154,90 @@ export default function ContactsPage() {
       {/* CONTACT DETAILS MODAL */}
       {selectedContact && (
         <>
-          <div className="modal fade show d-block">
-            <div className="modal-dialog modal-dialog-centered modal-fullscreen-sm-down">
-              <div className="modal-content">
+          <div style={backdropStyle} onClick={() => setSelectedContact(null)} />
 
-                <div className="modal-header">
-                  <h5>{selectedContact.name}</h5>
-                  <button
-                    className="btn-close"
-                    onClick={() => setSelectedContact(null)}
-                  />
-                </div>
+          <div style={modalStyle}>
+            <div
+              style={{
+                padding: 14,
+                borderBottom: "1px solid var(--border)",
+                display: "flex",
+                justifyContent: "space-between",
+              }}
+            >
+              <h5 style={{ margin: 0 }}>{selectedContact.name}</h5>
+              <button
+                onClick={() => setSelectedContact(null)}
+                className="btn btn-sm btn-outline-secondary"
+              >
+                ✕
+              </button>
+            </div>
 
-                <div className="modal-body">
-                  <p><strong>Phone:</strong> {selectedContact.phone}</p>
-                  <p><strong>Email:</strong> {selectedContact.email}</p>
-                  <p>
-                    <strong>Tag:</strong>{" "}
-                    <span className="badge bg-secondary">
-                      {selectedContact.tag}
-                    </span>
-                  </p>
-                </div>
+            <div style={{ padding: 14 }}>
+              <p><strong>Phone:</strong> {selectedContact.phone}</p>
+              <p><strong>Email:</strong> {selectedContact.email}</p>
+              <p>
+                <strong>Tag:</strong>{" "}
+                <span style={{ opacity: 0.8 }}>{selectedContact.tag}</span>
+              </p>
+            </div>
 
-                <div className="modal-footer">
-                  <button className="btn btn-outline-primary">
-                    Start Conversation
-                  </button>
-                </div>
-
-              </div>
+            <div style={{ padding: 14, borderTop: "1px solid var(--border)" }}>
+              <button className="btn btn-primary w-100">
+                Start Conversation
+              </button>
             </div>
           </div>
-
-          <div
-            className="modal-backdrop fade show"
-            onClick={() => setSelectedContact(null)}
-          ></div>
         </>
       )}
 
       {/* ADD CONTACT MODAL */}
       {showAddModal && (
         <>
-          <div className="modal fade show d-block">
-            <div className="modal-dialog modal-dialog-centered modal-fullscreen-sm-down">
-              <div className="modal-content">
+          <div style={backdropStyle} onClick={() => setShowAddModal(false)} />
 
-                <div className="modal-header">
-                  <h5>Add Contact</h5>
-                  <button
-                    className="btn-close"
-                    onClick={() => setShowAddModal(false)}
-                  />
-                </div>
+          <div style={modalStyle}>
+            <div
+              style={{
+                padding: 14,
+                borderBottom: "1px solid var(--border)",
+                display: "flex",
+                justifyContent: "space-between",
+              }}
+            >
+              <h5 style={{ margin: 0 }}>Add Contact</h5>
+              <button
+                onClick={() => setShowAddModal(false)}
+                className="btn btn-sm btn-outline-secondary"
+              >
+                ✕
+              </button>
+            </div>
 
-                <div className="modal-body d-flex flex-column gap-2">
-                  <input className="form-control" placeholder="Name" />
-                  <input className="form-control" placeholder="Phone" />
-                  <input className="form-control" placeholder="Email" />
-                  <input className="form-control" placeholder="Tag" />
-                </div>
+            <div style={{ padding: 14, display: "flex", flexDirection: "column", gap: 10 }}>
+              <input style={inputStyle} placeholder="Name" />
+              <input style={inputStyle} placeholder="Phone" />
+              <input style={inputStyle} placeholder="Email" />
+              <input style={inputStyle} placeholder="Tag" />
+            </div>
 
-                <div className="modal-footer">
-                  <button className="btn btn-primary">
-                    Save Contact
-                  </button>
-                </div>
-
-              </div>
+            <div style={{ padding: 14, borderTop: "1px solid var(--border)" }}>
+              <button className="btn btn-primary w-100">
+                Save Contact
+              </button>
             </div>
           </div>
-
-          <div
-            className="modal-backdrop fade show"
-            onClick={() => setShowAddModal(false)}
-          ></div>
         </>
       )}
     </div>
   );
 }
+
+const inputStyle: React.CSSProperties = {
+  padding: 10,
+  borderRadius: 8,
+  border: "1px solid var(--border)",
+  background: "var(--card)",
+  color: "var(--text)",
+};
