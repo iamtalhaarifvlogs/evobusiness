@@ -1,28 +1,53 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  ReactNode,
+} from "react";
 
 type Theme = "light" | "dark";
 
-const ThemeContext = createContext<any>(null);
+type ThemeContextType = {
+  theme: Theme;
+  toggleTheme: () => void;
+};
 
-export const ThemeProvider = ({ children }: any) => {
+// ✅ Create context with proper typing
+const ThemeContext = createContext<ThemeContextType | undefined>(
+  undefined
+);
+
+export const ThemeProvider = ({
+  children,
+}: {
+  children: ReactNode;
+}) => {
   const [theme, setTheme] = useState<Theme>("light");
 
-  // Load saved theme
+  // ✅ Load saved theme (SSR safe)
   useEffect(() => {
-    const saved = localStorage.getItem("theme") as Theme;
-    if (saved) setTheme(saved);
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("theme") as Theme | null;
+      if (saved) {
+        setTheme(saved);
+      }
+    }
   }, []);
 
-  // Apply theme to body
+  // ✅ Apply theme to DOM (SSR safe)
   useEffect(() => {
-    document.body.setAttribute("data-theme", theme);
-    localStorage.setItem("theme", theme);
+    if (typeof window !== "undefined") {
+      document.body.setAttribute("data-theme", theme);
+      localStorage.setItem("theme", theme);
+    }
   }, [theme]);
 
+  // ✅ Toggle function
   const toggleTheme = () => {
-    setTheme((prev: Theme) => (prev === "light" ? "dark" : "light"));
+    setTheme((prev) => (prev === "light" ? "dark" : "light"));
   };
 
   return (
@@ -32,4 +57,13 @@ export const ThemeProvider = ({ children }: any) => {
   );
 };
 
-export const useTheme = () => useContext(ThemeContext);
+// ✅ Custom hook with safety check
+export const useTheme = () => {
+  const context = useContext(ThemeContext);
+
+  if (!context) {
+    throw new Error("useTheme must be used within ThemeProvider");
+  }
+
+  return context;
+};
