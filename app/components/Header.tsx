@@ -8,6 +8,7 @@ import { useTheme } from "@/app/context/ThemeContext";
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+
   const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
 
@@ -20,24 +21,31 @@ export default function Header() {
     { name: "Campaigns", path: "/campaigns" },
   ];
 
-  // ✅ Close dropdown on outside click
+  // ✅ SSR-safe outside click handler
   useEffect(() => {
-    function handleClickOutside(event: any) {
+    if (typeof window === "undefined") return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+
       if (
         profileRef.current &&
-        !profileRef.current.contains(event.target)
+        !profileRef.current.contains(target)
       ) {
         setProfileOpen(false);
       }
-    }
+    };
 
     document.addEventListener("mousedown", handleClickOutside);
-    return () =>
+
+    return () => {
       document.removeEventListener("mousedown", handleClickOutside);
+    };
   }, []);
 
   return (
     <>
+      {/* HEADER */}
       <header
         className="shadow-sm"
         style={{
@@ -54,9 +62,12 @@ export default function Header() {
         <div className="container-fluid d-flex align-items-center justify-content-between">
 
           {/* LEFT: PROFILE */}
-          <div className="position-relative" ref={profileRef}>
+          <div
+            className="position-relative"
+            ref={profileRef}
+          >
             <div
-              onClick={() => setProfileOpen(!profileOpen)}
+              onClick={() => setProfileOpen((prev) => !prev)}
               style={{
                 width: 40,
                 height: 40,
@@ -115,10 +126,12 @@ export default function Header() {
                 }
               >
                 <span>
-                  {theme === "light" ? "🌙 Dark Mode" : "☀️ Light Mode"}
+                  {theme === "light"
+                    ? "🌙 Dark Mode"
+                    : "☀️ Light Mode"}
                 </span>
 
-                {/* Toggle indicator */}
+                {/* Toggle UI */}
                 <div
                   style={{
                     width: 36,
@@ -173,7 +186,7 @@ export default function Header() {
             </div>
           </div>
 
-          {/* CENTER: NAV */}
+          {/* CENTER NAV */}
           <nav className="d-none d-md-flex align-items-center gap-4">
             {navItems.map((item) => {
               const isActive = pathname === item.path;
@@ -199,7 +212,7 @@ export default function Header() {
             })}
           </nav>
 
-          {/* RIGHT: HAMBURGER */}
+          {/* MOBILE MENU BUTTON */}
           <div
             className="d-md-none"
             onClick={() => setMenuOpen(true)}
