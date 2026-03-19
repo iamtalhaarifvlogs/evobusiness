@@ -1,29 +1,40 @@
-/* Roboto Font */
-@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
-
-html, body {
-  padding: 0;
-  margin: 0;
-  font-family: 'Roboto', sans-serif;
+/* LIGHT THEME */
+[data-theme="light"] {
+  --bg: #f5f7fb;
+  --card: #ffffff;
+  --text: #1f2937;
+  --border: #e5e7eb;
 }
 
-/* 🌈 Global Gradient Theme */
-.app-body {
-  background: linear-gradient(
-    135deg,
-    #f8fafc 0%,
-    #eef2f7 40%,
-    #e6ecf5 100%
-  );
-  color: #1f2937;
+/* DARK THEME */
+[data-theme="dark"] {
+  --bg: #0f172a;
+  --card: #1e293b;
+  --text: #f1f5f9;
+  --border: #334155;
 }
 
-/* Main Content Wrapper */
-.main-content {
-  padding: 20px;
+/* GLOBAL */
+body {
+  background: var(--bg);
+  color: var(--text);
+  transition: all 0.3s ease;
 }
 
-/* Smooth UI feel everywhere */
-* {
-  transition: all 0.2s ease-in-out;
+/* REUSABLE CLASSES */
+.card-theme {
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.input-theme {
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.text-muted-theme {
+  color: #6b7280;
 }
