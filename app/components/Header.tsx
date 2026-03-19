@@ -3,11 +3,13 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTheme } from "@/app/context/ThemeContext";
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const pathname = usePathname();
+  const { theme, toggleTheme } = useTheme();
 
   const navItems = [
     { name: "Conversations", path: "/conversations" },
@@ -21,12 +23,14 @@ export default function Header() {
       <header
         className="shadow-sm"
         style={{
-          background: "rgba(255,255,255,0.7)",
+          background: "var(--card)",
           backdropFilter: "blur(10px)",
           padding: "12px 20px",
           position: "sticky",
           top: 0,
           zIndex: 1000,
+          color: "var(--text)",
+          borderBottom: "1px solid var(--border)",
         }}
       >
         <div className="container-fluid d-flex align-items-center justify-content-between">
@@ -39,7 +43,7 @@ export default function Header() {
                 width: 40,
                 height: 40,
                 borderRadius: "50%",
-                background: "#e9ecef",
+                background: "var(--border)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -50,16 +54,18 @@ export default function Header() {
               T
             </div>
 
-            {/* Dropdown */}
+            {/* DROPDOWN */}
             <div
               style={{
                 position: "absolute",
                 top: 50,
                 left: 0,
-                background: "#fff",
+                background: "var(--card)",
+                color: "var(--text)",
                 borderRadius: 10,
                 width: 180,
                 boxShadow: "0 10px 25px rgba(0,0,0,0.08)",
+                border: "1px solid var(--border)",
                 opacity: profileOpen ? 1 : 0,
                 transform: profileOpen
                   ? "translateY(0)"
@@ -69,15 +75,30 @@ export default function Header() {
                 overflow: "hidden",
               }}
             >
-              {["Theme", "Reminders", "Settings"].map((item) => (
+              {/* THEME TOGGLE */}
+              <div
+                onClick={() => {
+                  toggleTheme();
+                  setProfileOpen(false);
+                }}
+                style={{ padding: "10px 15px", cursor: "pointer" }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.background = "var(--border)")
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.background = "transparent")
+                }
+              >
+                Switch to {theme === "light" ? "Dark" : "Light"} Mode
+              </div>
+
+              {/* OTHER OPTIONS */}
+              {["Reminders", "Settings"].map((item) => (
                 <div
                   key={item}
-                  style={{
-                    padding: "10px 15px",
-                    cursor: "pointer",
-                  }}
+                  style={{ padding: "10px 15px", cursor: "pointer" }}
                   onMouseEnter={(e) =>
-                    (e.currentTarget.style.background = "#f5f5f5")
+                    (e.currentTarget.style.background = "var(--border)")
                   }
                   onMouseLeave={(e) =>
                     (e.currentTarget.style.background = "transparent")
@@ -89,24 +110,30 @@ export default function Header() {
             </div>
           </div>
 
-          {/* CENTER: NAV (DESKTOP) */}
+          {/* CENTER: NAV */}
           <nav className="d-none d-md-flex align-items-center gap-4">
-            {navItems.map((item) => (
-              <Link
-                key={item.path}
-                href={item.path}
-                style={{
-                  textDecoration: "none",
-                  color:
-                    pathname === item.path ? "#0d6efd" : "#333",
-                  fontWeight: pathname === item.path ? 600 : 400,
-                  position: "relative",
-                  transition: "0.2s",
-                }}
-              >
-                {item.name}
-              </Link>
-            ))}
+            {navItems.map((item) => {
+              const isActive = pathname === item.path;
+
+              return (
+                <Link
+                  key={item.path}
+                  href={item.path}
+                  style={{
+                    textDecoration: "none",
+                    color: isActive ? "#0d6efd" : "var(--text)",
+                    fontWeight: isActive ? 600 : 400,
+                    paddingBottom: 2,
+                    borderBottom: isActive
+                      ? "2px solid #0d6efd"
+                      : "2px solid transparent",
+                    transition: "0.2s",
+                  }}
+                >
+                  {item.name}
+                </Link>
+              );
+            })}
           </nav>
 
           {/* RIGHT: HAMBURGER */}
@@ -116,6 +143,7 @@ export default function Header() {
             style={{
               fontSize: 24,
               cursor: "pointer",
+              color: "var(--text)",
             }}
           >
             ☰
@@ -131,11 +159,13 @@ export default function Header() {
           right: menuOpen ? 0 : -280,
           width: 260,
           height: "100%",
-          background: "#fff",
+          background: "var(--card)",
+          color: "var(--text)",
           zIndex: 1050,
           transition: "0.3s ease",
           boxShadow: "-5px 0 20px rgba(0,0,0,0.1)",
           padding: 20,
+          borderLeft: "1px solid var(--border)",
         }}
       >
         <div className="d-flex justify-content-between align-items-center mb-4">
@@ -149,21 +179,24 @@ export default function Header() {
         </div>
 
         <div className="d-flex flex-column gap-3">
-          {navItems.map((item) => (
-            <Link
-              key={item.path}
-              href={item.path}
-              onClick={() => setMenuOpen(false)}
-              style={{
-                textDecoration: "none",
-                color:
-                  pathname === item.path ? "#0d6efd" : "#333",
-                fontWeight: pathname === item.path ? 600 : 400,
-              }}
-            >
-              {item.name}
-            </Link>
-          ))}
+          {navItems.map((item) => {
+            const isActive = pathname === item.path;
+
+            return (
+              <Link
+                key={item.path}
+                href={item.path}
+                onClick={() => setMenuOpen(false)}
+                style={{
+                  textDecoration: "none",
+                  color: isActive ? "#0d6efd" : "var(--text)",
+                  fontWeight: isActive ? 600 : 400,
+                }}
+              >
+                {item.name}
+              </Link>
+            );
+          })}
         </div>
       </div>
 
