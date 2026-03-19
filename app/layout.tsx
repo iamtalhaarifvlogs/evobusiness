@@ -2,7 +2,7 @@
 import "@/app/globals.css";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
-
+import Providers from "@/app/components/providers";
 import Header from "@/app/components/Header";
 import Footer from "@/app/components/Footer";
 import { ThemeProvider } from "@/app/context/ThemeContext";
@@ -20,9 +20,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="app-body d-flex flex-column min-vh-100">
+
         
         {/* THEME PROVIDER WRAPS EVERYTHING */}
-        <ThemeProvider>
+        <Providers>
           
           <Header />
 
@@ -33,7 +34,7 @@ export default function RootLayout({
 
           <Footer />
 
-        </ThemeProvider>
+        </Providers>
 
       </body>
     </html>
