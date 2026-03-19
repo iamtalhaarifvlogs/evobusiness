@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTheme } from "@/app/context/ThemeContext";
@@ -11,6 +11,8 @@ export default function Header() {
   const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
 
+  const profileRef = useRef<HTMLDivElement>(null);
+
   const navItems = [
     { name: "Conversations", path: "/conversations" },
     { name: "Analytics", path: "/analytics" },
@@ -18,13 +20,29 @@ export default function Header() {
     { name: "Campaigns", path: "/campaigns" },
   ];
 
+  // ✅ Close dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(event: any) {
+      if (
+        profileRef.current &&
+        !profileRef.current.contains(event.target)
+      ) {
+        setProfileOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () =>
+      document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   return (
     <>
       <header
         className="shadow-sm"
         style={{
           background: "var(--card)",
-          backdropFilter: "blur(10px)",
+          backdropFilter: "blur(12px)",
           padding: "12px 20px",
           position: "sticky",
           top: 0,
@@ -36,7 +54,7 @@ export default function Header() {
         <div className="container-fluid d-flex align-items-center justify-content-between">
 
           {/* LEFT: PROFILE */}
-          <div className="position-relative">
+          <div className="position-relative" ref={profileRef}>
             <div
               onClick={() => setProfileOpen(!profileOpen)}
               style={{
@@ -48,7 +66,8 @@ export default function Header() {
                 alignItems: "center",
                 justifyContent: "center",
                 cursor: "pointer",
-                fontWeight: 500,
+                fontWeight: 600,
+                transition: "0.2s",
               }}
             >
               T
@@ -62,9 +81,9 @@ export default function Header() {
                 left: 0,
                 background: "var(--card)",
                 color: "var(--text)",
-                borderRadius: 10,
-                width: 180,
-                boxShadow: "0 10px 25px rgba(0,0,0,0.08)",
+                borderRadius: 12,
+                width: 200,
+                boxShadow: "0 12px 30px rgba(0,0,0,0.1)",
                 border: "1px solid var(--border)",
                 opacity: profileOpen ? 1 : 0,
                 transform: profileOpen
@@ -81,7 +100,13 @@ export default function Header() {
                   toggleTheme();
                   setProfileOpen(false);
                 }}
-                style={{ padding: "10px 15px", cursor: "pointer" }}
+                style={{
+                  padding: "12px 15px",
+                  cursor: "pointer",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
                 onMouseEnter={(e) =>
                   (e.currentTarget.style.background = "var(--border)")
                 }
@@ -89,24 +114,62 @@ export default function Header() {
                   (e.currentTarget.style.background = "transparent")
                 }
               >
-                Switch to {theme === "light" ? "Dark" : "Light"} Mode
+                <span>
+                  {theme === "light" ? "🌙 Dark Mode" : "☀️ Light Mode"}
+                </span>
+
+                {/* Toggle indicator */}
+                <div
+                  style={{
+                    width: 36,
+                    height: 18,
+                    borderRadius: 20,
+                    background:
+                      theme === "light" ? "#ccc" : "#0d6efd",
+                    position: "relative",
+                    transition: "0.3s",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 14,
+                      height: 14,
+                      borderRadius: "50%",
+                      background: "#fff",
+                      position: "absolute",
+                      top: 2,
+                      left: theme === "light" ? 2 : 20,
+                      transition: "0.3s",
+                    }}
+                  />
+                </div>
               </div>
 
-              {/* OTHER OPTIONS */}
-              {["Reminders", "Settings"].map((item) => (
-                <div
-                  key={item}
-                  style={{ padding: "10px 15px", cursor: "pointer" }}
-                  onMouseEnter={(e) =>
-                    (e.currentTarget.style.background = "var(--border)")
-                  }
-                  onMouseLeave={(e) =>
-                    (e.currentTarget.style.background = "transparent")
-                  }
-                >
-                  {item}
-                </div>
-              ))}
+              {/* REMINDERS */}
+              <div
+                style={{ padding: "12px 15px", cursor: "pointer" }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.background = "var(--border)")
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.background = "transparent")
+                }
+              >
+                Reminders
+              </div>
+
+              {/* SETTINGS */}
+              <div
+                style={{ padding: "12px 15px", cursor: "pointer" }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.background = "var(--border)")
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.background = "transparent")
+                }
+              >
+                Settings
+              </div>
             </div>
           </div>
 
@@ -123,7 +186,7 @@ export default function Header() {
                     textDecoration: "none",
                     color: isActive ? "#0d6efd" : "var(--text)",
                     fontWeight: isActive ? 600 : 400,
-                    paddingBottom: 2,
+                    paddingBottom: 4,
                     borderBottom: isActive
                       ? "2px solid #0d6efd"
                       : "2px solid transparent",
@@ -163,7 +226,7 @@ export default function Header() {
           color: "var(--text)",
           zIndex: 1050,
           transition: "0.3s ease",
-          boxShadow: "-5px 0 20px rgba(0,0,0,0.1)",
+          boxShadow: "-5px 0 25px rgba(0,0,0,0.15)",
           padding: 20,
           borderLeft: "1px solid var(--border)",
         }}
