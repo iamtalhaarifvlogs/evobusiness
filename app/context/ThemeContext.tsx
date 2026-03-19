@@ -15,37 +15,29 @@ type ThemeContextType = {
   toggleTheme: () => void;
 };
 
-// ✅ Create context with proper typing
 const ThemeContext = createContext<ThemeContextType | undefined>(
   undefined
 );
 
-export const ThemeProvider = ({
-  children,
-}: {
-  children: ReactNode;
-}) => {
+export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   const [theme, setTheme] = useState<Theme>("light");
 
-  // ✅ Load saved theme (SSR safe)
+  // ✅ SAFE INIT (runs only client-side)
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("theme") as Theme | null;
-      if (saved) {
-        setTheme(saved);
-      }
-    }
+    try {
+      const saved = window.localStorage.getItem("theme") as Theme | null;
+      if (saved) setTheme(saved);
+    } catch {}
   }, []);
 
-  // ✅ Apply theme to DOM (SSR safe)
+  // ✅ SAFE APPLY (NO SSR TOUCH)
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      document.body.setAttribute("data-theme", theme);
-      localStorage.setItem("theme", theme);
-    }
+    try {
+      document.body.dataset.theme = theme;
+      window.localStorage.setItem("theme", theme);
+    } catch {}
   }, [theme]);
 
-  // ✅ Toggle function
   const toggleTheme = () => {
     setTheme((prev) => (prev === "light" ? "dark" : "light"));
   };
@@ -57,13 +49,8 @@ export const ThemeProvider = ({
   );
 };
 
-// ✅ Custom hook with safety check
 export const useTheme = () => {
-  const context = useContext(ThemeContext);
-
-  if (!context) {
-    throw new Error("useTheme must be used within ThemeProvider");
-  }
-
-  return context;
+  const ctx = useContext(ThemeContext);
+  if (!ctx) throw new Error("useTheme must be inside ThemeProvider");
+  return ctx;
 };
