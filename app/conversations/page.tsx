@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 type Chat = {
   id: number;
@@ -9,26 +9,46 @@ type Chat = {
 };
 
 type Message = {
+  id: number;
   sender: "bot" | "user";
   text: string;
 };
 
 export default function ConversationsPage() {
   const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
-  const [botPaused, setBotPaused] = useState(false);
 
-  const chats: Chat[] = [
-    { id: 1, name: "Ali Raza", lastMessage: "Hi, I need help with pricing" },
-    { id: 2, name: "Sara Khan", lastMessage: "Is this available?" },
-    { id: 3, name: "John Doe", lastMessage: "Tell me more about your service" },
-  ];
+  // true = bot OFF (manual mode)
+  const [manualMode, setManualMode] = useState(false);
 
-  const messages: Message[] = [
-    { sender: "user", text: "Hi" },
-    { sender: "bot", text: "Hello! How can I assist you today?" },
-    { sender: "user", text: "I need pricing details" },
-    { sender: "bot", text: "Sure, let me guide you." },
-  ];
+  const [input, setInput] = useState("");
+
+  const chats: Chat[] = useMemo(
+    () => [
+      { id: 1, name: "Ali Raza", lastMessage: "Hi, I need help with pricing" },
+      { id: 2, name: "Sara Khan", lastMessage: "Is this available?" },
+      { id: 3, name: "John Doe", lastMessage: "Tell me more about your service" },
+    ],
+    []
+  );
+
+  const [messagesMap, setMessagesMap] = useState<Record<number, Message[]>>({
+    1: [
+      { id: 1, sender: "user", text: "Hi" },
+      { id: 2, sender: "bot", text: "Hello! How can I assist you today?" },
+    ],
+    2: [
+      { id: 1, sender: "user", text: "Is this available?" },
+      { id: 2, sender: "bot", text: "Yes, it is available." },
+    ],
+    3: [
+      { id: 1, sender: "user", text: "Tell me more" },
+      { id: 2, sender: "bot", text: "Sure, here's everything you need." },
+    ],
+  });
+
+  const currentMessages = selectedChat
+    ? messagesMap[selectedChat.id] || []
+    : [];
 
   const cardStyle: React.CSSProperties = {
     background: "var(--card)",
@@ -36,28 +56,56 @@ export default function ConversationsPage() {
     border: "1px solid var(--border)",
   };
 
+  // ================= SEND MESSAGE =================
+  const sendMessage = () => {
+    if (!selectedChat || !input.trim()) return;
+
+    const newMsg: Message = {
+      id: Date.now(),
+      sender: "user",
+      text: input,
+    };
+
+    const updated = {
+      ...messagesMap,
+      [selectedChat.id]: [
+        ...(messagesMap[selectedChat.id] || []),
+        newMsg,
+      ],
+    };
+
+    setMessagesMap(updated);
+    setInput("");
+
+    // ================= FUTURE BOT HOOK =================
+    if (!manualMode) {
+      setTimeout(() => {
+        const botReply: Message = {
+          id: Date.now() + 1,
+          sender: "bot",
+          text: "🤖 (AI response will be connected here later)",
+        };
+
+        setMessagesMap((prev) => ({
+          ...prev,
+          [selectedChat.id]: [...(prev[selectedChat.id] || []), botReply],
+        }));
+      }, 800);
+    }
+  };
+
   return (
     <div className="container-fluid py-3" style={{ color: "var(--text)" }}>
-
-      {/* HEADER ROW */}
+      {/* HEADER */}
       <div className="d-flex justify-content-between align-items-center mb-3 px-2">
         <h5 className="mb-0">Conversations</h5>
         <button className="btn btn-primary btn-sm">+ New</button>
       </div>
 
-      {/* CHAT AREA */}
       <div className="row">
-
         {/* CHAT LIST */}
         <div className="col-12 col-md-4 col-lg-3">
-          <div
-            className="d-flex flex-column"
-            style={{
-              ...cardStyle,
-              borderRadius: 12,
-              overflow: "hidden",
-            }}
-          >
+          <div style={{ ...cardStyle, borderRadius: 12, overflow: "hidden" }}>
             {chats.map((chat) => (
               <div
                 key={chat.id}
@@ -85,14 +133,16 @@ export default function ConversationsPage() {
 
         {/* EMPTY STATE */}
         <div className="d-none d-md-flex col-md-8 col-lg-9 align-items-center justify-content-center">
-          <div style={{ color: "var(--text)", opacity: 0.6 }}>
-            <h5>Select a conversation</h5>
-            <p>Click a chat to open messages</p>
-          </div>
+          {!selectedChat && (
+            <div style={{ opacity: 0.6 }}>
+              <h5>Select a conversation</h5>
+              <p>Click a chat to open messages</p>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* CHAT MODAL */}
+      {/* ================= CHAT MODAL ================= */}
       {selectedChat && (
         <>
           {/* BACKDROP */}
@@ -100,10 +150,7 @@ export default function ConversationsPage() {
             onClick={() => setSelectedChat(null)}
             style={{
               position: "fixed",
-              top: 0,
-              left: 0,
-              width: "100%",
-              height: "100%",
+              inset: 0,
               background: "rgba(0,0,0,0.4)",
               zIndex: 1040,
             }}
@@ -129,7 +176,6 @@ export default function ConversationsPage() {
               overflow: "hidden",
             }}
           >
-
             {/* HEADER */}
             <div
               style={{
@@ -143,13 +189,14 @@ export default function ConversationsPage() {
               <h6 style={{ margin: 0 }}>{selectedChat.name}</h6>
 
               <div className="d-flex gap-2 align-items-center">
+                {/* 🔥 MODE TOGGLE */}
                 <button
-                  onClick={() => setBotPaused(!botPaused)}
+                  onClick={() => setManualMode((p) => !p)}
                   className={`btn btn-sm ${
-                    botPaused ? "btn-danger" : "btn-success"
+                    manualMode ? "btn-danger" : "btn-success"
                   }`}
                 >
-                  {botPaused ? "Paused" : "Bot"}
+                  {manualMode ? "Manual Mode" : "Bot Mode"}
                 </button>
 
                 <button
@@ -167,12 +214,11 @@ export default function ConversationsPage() {
                 flex: 1,
                 padding: 12,
                 overflowY: "auto",
-                background: "transparent",
               }}
             >
-              {messages.map((msg, index) => (
+              {currentMessages.map((msg) => (
                 <div
-                  key={index}
+                  key={msg.id}
                   style={{
                     display: "flex",
                     justifyContent:
@@ -186,9 +232,7 @@ export default function ConversationsPage() {
                       borderRadius: 10,
                       maxWidth: "70%",
                       background:
-                        msg.sender === "user"
-                          ? "transparent"
-                          : "#0d6efd",
+                        msg.sender === "user" ? "transparent" : "#0d6efd",
                       color:
                         msg.sender === "user"
                           ? "var(--text)"
@@ -215,9 +259,14 @@ export default function ConversationsPage() {
               }}
             >
               <input
-                type="text"
-                disabled={!botPaused}
-                placeholder={botPaused ? "Type message..." : "Bot is active..."}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                disabled={!manualMode}
+                placeholder={
+                  manualMode
+                    ? "Type message..."
+                    : "Switch to Manual Mode to type..."
+                }
                 style={{
                   flex: 1,
                   padding: 10,
@@ -229,8 +278,9 @@ export default function ConversationsPage() {
               />
 
               <button
+                onClick={sendMessage}
                 className="btn btn-primary"
-                disabled={!botPaused}
+                disabled={!manualMode}
               >
                 Send
               </button>
