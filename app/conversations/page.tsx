@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { getContacts } from "@/app/lib/storage";
 
 type Contact = {
@@ -22,7 +23,6 @@ type Message = {
   text: string;
 };
 
-// ================= STORAGE KEYS =================
 const CHATS_KEY = "chats";
 const MESSAGES_KEY = "chat_messages";
 
@@ -44,31 +44,32 @@ const safeSet = (key: string, value: any) => {
 
   try {
     localStorage.setItem(key, JSON.stringify(value));
-  } catch (e) {
-    console.warn("Storage write failed", e);
-  }
+  } catch {}
 };
 
 export default function ConversationsPage() {
+  const searchParams = useSearchParams();
+  const contactIdFromUrl = searchParams.get("contactId");
+
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [chats, setChats] = useState<Chat[]>([]);
   const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
+  const [messagesMap, setMessagesMap] = useState<Record<number, Message[]>>(
+    {}
+  );
 
   const [manualMode, setManualMode] = useState(false);
   const [input, setInput] = useState("");
   const [showContacts, setShowContacts] = useState(false);
 
-  const [messagesMap, setMessagesMap] = useState<Record<number, Message[]>>({});
-
-  // ================= LOAD DATA =================
+  // ================= LOAD INITIAL DATA =================
   useEffect(() => {
     setContacts(getContacts());
-
     setChats(safeGet<Chat[]>(CHATS_KEY, []));
     setMessagesMap(safeGet<Record<number, Message[]>>(MESSAGES_KEY, {}));
   }, []);
 
-  // ================= PERSIST DATA =================
+  // ================= PERSIST =================
   useEffect(() => {
     safeSet(CHATS_KEY, chats);
   }, [chats]);
@@ -80,6 +81,19 @@ export default function ConversationsPage() {
   const currentMessages = selectedChat
     ? messagesMap[selectedChat.id] || []
     : [];
+
+  // ================= AUTO OPEN FROM CONTACTS PAGE =================
+  useEffect(() => {
+    if (!contactIdFromUrl || contacts.length === 0) return;
+
+    const contact = contacts.find(
+      (c) => c.id === Number(contactIdFromUrl)
+    );
+
+    if (contact) {
+      startChatWithContact(contact);
+    }
+  }, [contactIdFromUrl, contacts]);
 
   // ================= START CHAT =================
   const startChatWithContact = (contact: Contact) => {
@@ -228,7 +242,6 @@ export default function ConversationsPage() {
                   {manualMode ? "Manual" : "Bot"}
                 </button>
 
-                {/* CLOSE BUTTON */}
                 <button
                   onClick={() => {
                     setSelectedChat(null);
@@ -286,7 +299,6 @@ export default function ConversationsPage() {
                 placeholder={manualMode ? "Type message..." : "Switch to Manual"}
               />
 
-              {/* ROUND SEND BUTTON */}
               <button
                 onClick={sendMessage}
                 disabled={!manualMode}
@@ -308,7 +320,7 @@ export default function ConversationsPage() {
         </div>
       )}
 
-      {/* ================= CONTACT SELECTOR ================= */}
+      {/* CONTACT SELECTOR */}
       {showContacts && (
         <div
           style={{
@@ -332,23 +344,19 @@ export default function ConversationsPage() {
           >
             <h6>Select Contact</h6>
 
-            {contacts.length === 0 ? (
-              <p>No contacts found</p>
-            ) : (
-              contacts.map((c) => (
-                <div
-                  key={c.id}
-                  onClick={() => startChatWithContact(c)}
-                  style={{
-                    padding: 8,
-                    borderBottom: "1px solid #eee",
-                    cursor: "pointer",
-                  }}
-                >
-                  {c.name}
-                </div>
-              ))
-            )}
+            {contacts.map((c) => (
+              <div
+                key={c.id}
+                onClick={() => startChatWithContact(c)}
+                style={{
+                  padding: 8,
+                  borderBottom: "1px solid #eee",
+                  cursor: "pointer",
+                }}
+              >
+                {c.name}
+              </div>
+            ))}
 
             <button
               onClick={() => setShowContacts(false)}
