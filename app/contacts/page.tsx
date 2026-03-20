@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { getContacts, addContact } from "@/app/lib/storage";
+import SuccessModal from "@/app/components/SuccessModal";
 
 type Contact = {
   id: number;
@@ -18,11 +19,17 @@ export default function ContactsPage() {
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
 
-  // form state (IMPORTANT FIX)
+  // form state
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [tag, setTag] = useState("");
+
+  // success modal
+  const [showSuccess, setShowSuccess] = useState(false);
+
+  // validation error
+  const [error, setError] = useState("");
 
   // ================= LOAD DATA =================
   useEffect(() => {
@@ -34,8 +41,26 @@ export default function ContactsPage() {
     c.name.toLowerCase().includes(search.toLowerCase())
   );
 
+  // ================= VALIDATION =================
+  const isValidEmail = (email: string) => {
+    return /\S+@\S+\.\S+/.test(email);
+  };
+
   // ================= SAVE CONTACT =================
   const handleSave = () => {
+    setError("");
+
+    // VALIDATION RULES
+    if (!name || !phone || !email || !tag) {
+      setError("All fields are required");
+      return;
+    }
+
+    if (!isValidEmail(email)) {
+      setError("Invalid email format");
+      return;
+    }
+
     const newContact: Contact = {
       id: Date.now(),
       name,
@@ -56,6 +81,9 @@ export default function ContactsPage() {
     setTag("");
 
     setShowAddModal(false);
+
+    // show success modal
+    setShowSuccess(true);
   };
 
   // ================= STYLES =================
@@ -66,7 +94,6 @@ export default function ContactsPage() {
     borderRadius: 12,
     padding: 16,
     cursor: "pointer",
-    transition: "0.2s ease",
   };
 
   const modalStyle: React.CSSProperties = {
@@ -102,26 +129,18 @@ export default function ContactsPage() {
   };
 
   return (
-    <div className="container-fluid py-3" style={{ color: "var(--text)" }}>
+    <div className="container-fluid py-3">
 
       {/* HEADER */}
-      <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 gap-2">
-        <h5 className="mb-0">Contacts</h5>
+      <div className="d-flex justify-content-between mb-3">
+        <h5>Contacts</h5>
 
-        <div className="d-flex gap-2 w-100 w-md-auto">
+        <div className="d-flex gap-2">
           <input
-            type="text"
-            placeholder="Search contacts..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            style={{
-              flex: 1,
-              padding: 10,
-              borderRadius: 8,
-              border: "1px solid var(--border)",
-              background: "var(--card)",
-              color: "var(--text)",
-            }}
+            placeholder="Search..."
+            style={inputStyle}
           />
 
           <button
@@ -133,53 +152,19 @@ export default function ContactsPage() {
         </div>
       </div>
 
-      {/* CONTACT LIST */}
+      {/* CONTACTS */}
       <div className="row g-3">
         {filteredContacts.map((contact) => (
-          <div key={contact.id} className="col-12 col-sm-6 col-lg-4">
-            <div
-              style={cardStyle}
-              onClick={() => setSelectedContact(contact)}
-            >
-              <h6 className="mb-1">{contact.name}</h6>
-              <div style={{ fontSize: 13, opacity: 0.7 }}>{contact.phone}</div>
-              <div style={{ fontSize: 13, opacity: 0.7 }}>{contact.email}</div>
-
-              <span
-                style={{
-                  display: "inline-block",
-                  marginTop: 10,
-                  padding: "4px 8px",
-                  borderRadius: 8,
-                  fontSize: 12,
-                  border: "1px solid var(--border)",
-                }}
-              >
-                {contact.tag}
-              </span>
+          <div key={contact.id} className="col-12 col-md-4">
+            <div style={cardStyle} onClick={() => setSelectedContact(contact)}>
+              <h6>{contact.name}</h6>
+              <div style={{ fontSize: 13 }}>{contact.phone}</div>
+              <div style={{ fontSize: 13 }}>{contact.email}</div>
+              <small>{contact.tag}</small>
             </div>
           </div>
         ))}
       </div>
-
-      {/* DETAILS MODAL */}
-      {selectedContact && (
-        <>
-          <div style={backdropStyle} onClick={() => setSelectedContact(null)} />
-
-          <div style={modalStyle}>
-            <div style={{ padding: 14, borderBottom: "1px solid var(--border)" }}>
-              <h5>{selectedContact.name}</h5>
-            </div>
-
-            <div style={{ padding: 14 }}>
-              <p><strong>Phone:</strong> {selectedContact.phone}</p>
-              <p><strong>Email:</strong> {selectedContact.email}</p>
-              <p><strong>Tag:</strong> {selectedContact.tag}</p>
-            </div>
-          </div>
-        </>
-      )}
 
       {/* ADD MODAL */}
       {showAddModal && (
@@ -187,21 +172,54 @@ export default function ContactsPage() {
           <div style={backdropStyle} onClick={() => setShowAddModal(false)} />
 
           <div style={modalStyle}>
-            <div style={{ padding: 14, borderBottom: "1px solid var(--border)" }}>
+            <div style={{ padding: 15, borderBottom: "1px solid var(--border)" }}>
               <h5>Add Contact</h5>
             </div>
 
-            <div style={{ padding: 14, display: "flex", flexDirection: "column", gap: 10 }}>
+            <div style={{ padding: 15, display: "flex", flexDirection: "column", gap: 10 }}>
               <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" style={inputStyle} />
               <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Phone" style={inputStyle} />
               <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" style={inputStyle} />
               <input value={tag} onChange={(e) => setTag(e.target.value)} placeholder="Tag" style={inputStyle} />
+
+              {/* ERROR MESSAGE */}
+              {error && (
+                <div style={{ color: "red", fontSize: 13 }}>
+                  {error}
+                </div>
+              )}
             </div>
 
-            <div style={{ padding: 14, borderTop: "1px solid var(--border)" }}>
+            <div style={{ padding: 15, borderTop: "1px solid var(--border)" }}>
               <button className="btn btn-primary w-100" onClick={handleSave}>
                 Save Contact
               </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* SUCCESS MODAL */}
+      <SuccessModal
+        show={showSuccess}
+        title="Contact Added 🎉"
+        message="Your contact has been saved successfully."
+        buttonText="View Contacts"
+        redirectTo="/contacts"
+        onClose={() => setShowSuccess(false)}
+      />
+
+      {/* DETAILS MODAL (unchanged) */}
+      {selectedContact && (
+        <>
+          <div style={backdropStyle} onClick={() => setSelectedContact(null)} />
+
+          <div style={modalStyle}>
+            <div style={{ padding: 15 }}>
+              <h5>{selectedContact.name}</h5>
+              <p>{selectedContact.phone}</p>
+              <p>{selectedContact.email}</p>
+              <p>{selectedContact.tag}</p>
             </div>
           </div>
         </>
