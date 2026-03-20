@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import { getContacts } from "@/lib/storage"; // 👈 adjust path if needed
 
 type Chat = {
   id: number;
@@ -21,39 +22,38 @@ type Message = {
 };
 
 export default function ConversationsPage() {
+  const [contacts, setContacts] = useState<Contact[]>([]);
+
+  const [chats, setChats] = useState<Chat[]>([]);
   const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
+
   const [manualMode, setManualMode] = useState(false);
   const [input, setInput] = useState("");
-
-  // ================= CONTACT LIST (FROM STORAGE LATER) =================
-  const contacts: Contact[] = useMemo(
-    () => [
-      { id: 1, name: "Ali Raza" },
-      { id: 2, name: "Sara Khan" },
-      { id: 3, name: "John Doe" },
-    ],
-    []
-  );
-
-  // ================= CHATS =================
-  const [chats, setChats] = useState<Chat[]>([
-    { id: 1, contactId: 1, name: "Ali Raza", lastMessage: "Hi" },
-    { id: 2, contactId: 2, name: "Sara Khan", lastMessage: "Is this available?" },
-  ]);
-
-  const [messagesMap, setMessagesMap] = useState<Record<number, Message[]>>({
-    1: [{ id: 1, sender: "user", text: "Hi" }],
-    2: [{ id: 1, sender: "user", text: "Is this available?" }],
-  });
-
-  // ================= CONTACT PICKER MODAL =================
   const [showContacts, setShowContacts] = useState(false);
+
+  const [messagesMap, setMessagesMap] = useState<
+    Record<number, Message[]>
+  >({});
+
+  // ================= LOAD CONTACTS FROM STORAGE =================
+  useEffect(() => {
+    const load = () => {
+      const stored = getContacts() || [];
+      setContacts(stored);
+    };
+
+    load();
+
+    // optional live sync (if other page updates)
+    const interval = setInterval(load, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const currentMessages = selectedChat
     ? messagesMap[selectedChat.id] || []
     : [];
 
-  // ================= CREATE CHAT FROM CONTACT =================
+  // ================= CREATE CHAT FROM REAL CONTACT =================
   const startChatWithContact = (contact: Contact) => {
     const existing = chats.find((c) => c.contactId === contact.id);
 
@@ -111,7 +111,7 @@ export default function ConversationsPage() {
         const botMsg: Message = {
           id: Date.now() + 1,
           sender: "bot",
-          text: "🤖 AI reply placeholder",
+          text: "🤖 AI response placeholder",
         };
 
         setMessagesMap((prev) => ({
@@ -129,7 +129,7 @@ export default function ConversationsPage() {
       <div className="d-flex justify-content-between mb-3">
         <h5>Conversations</h5>
 
-        {/* FIXED FLOW */}
+        {/* NOW REAL CONTACT-BASED FLOW */}
         <button
           onClick={() => setShowContacts(true)}
           className="btn btn-primary btn-sm rounded-pill"
@@ -138,17 +138,15 @@ export default function ConversationsPage() {
         </button>
       </div>
 
+      {/* CHAT LIST */}
       <div className="row">
-
-        {/* CHAT LIST */}
         <div className="col-md-4">
-          <div className="border rounded p-2">
+          <div className="border rounded">
             {chats.map((chat) => (
               <div
                 key={chat.id}
                 onClick={() => setSelectedChat(chat)}
-                className="p-2 border-bottom"
-                style={{ cursor: "pointer" }}
+                style={{ padding: 10, cursor: "pointer" }}
               >
                 <b>{chat.name}</b>
                 <div style={{ fontSize: 12, opacity: 0.6 }}>
@@ -159,9 +157,8 @@ export default function ConversationsPage() {
           </div>
         </div>
 
-        {/* EMPTY */}
         <div className="col-md-8 d-none d-md-flex align-items-center justify-content-center">
-          {!selectedChat && <div>Select a chat</div>}
+          {!selectedChat && <div>Select a conversation</div>}
         </div>
       </div>
 
@@ -172,7 +169,7 @@ export default function ConversationsPage() {
             position: "fixed",
             inset: 0,
             background: "rgba(0,0,0,0.4)",
-            zIndex: 9998,
+            zIndex: 9999,
           }}
         >
           <div
@@ -184,14 +181,12 @@ export default function ConversationsPage() {
               width: "90%",
               maxWidth: 850,
               height: "85vh",
-              background: "#fff",
+              background: "var(--card)",
               borderRadius: 12,
               display: "flex",
               flexDirection: "column",
-              zIndex: 9999,
             }}
           >
-
             {/* HEADER */}
             <div className="p-2 border-bottom d-flex justify-content-between">
               <b>{selectedChat.name}</b>
@@ -218,9 +213,9 @@ export default function ConversationsPage() {
                 >
                   <span
                     style={{
-                      padding: "8px 10px",
-                      borderRadius: 10,
                       display: "inline-block",
+                      padding: 8,
+                      borderRadius: 10,
                       background:
                         m.sender === "user" ? "#0d6efd" : "#eee",
                       color: m.sender === "user" ? "#fff" : "#000",
@@ -240,9 +235,7 @@ export default function ConversationsPage() {
                 disabled={!manualMode}
                 className="form-control"
                 placeholder={
-                  manualMode
-                    ? "Type..."
-                    : "Switch to Manual mode"
+                  manualMode ? "Type..." : "Switch to Manual"
                 }
               />
 
@@ -258,7 +251,7 @@ export default function ConversationsPage() {
         </div>
       )}
 
-      {/* ================= CONTACT PICKER MODAL ================= */}
+      {/* ================= CONTACT SELECTOR ================= */}
       {showContacts && (
         <div
           style={{
@@ -274,7 +267,7 @@ export default function ConversationsPage() {
               top: "50%",
               left: "50%",
               transform: "translate(-50%, -50%)",
-              width: "300px",
+              width: 300,
               background: "#fff",
               borderRadius: 10,
               padding: 10,
@@ -282,23 +275,27 @@ export default function ConversationsPage() {
           >
             <h6>Select Contact</h6>
 
-            {contacts.map((c) => (
-              <div
-                key={c.id}
-                onClick={() => startChatWithContact(c)}
-                style={{
-                  padding: 8,
-                  borderBottom: "1px solid #ddd",
-                  cursor: "pointer",
-                }}
-              >
-                {c.name}
-              </div>
-            ))}
+            {contacts.length === 0 ? (
+              <p>No contacts found</p>
+            ) : (
+              contacts.map((c) => (
+                <div
+                  key={c.id}
+                  onClick={() => startChatWithContact(c)}
+                  style={{
+                    padding: 8,
+                    borderBottom: "1px solid #ddd",
+                    cursor: "pointer",
+                  }}
+                >
+                  {c.name}
+                </div>
+              ))
+            )}
 
             <button
               onClick={() => setShowContacts(false)}
-              className="btn btn-sm btn-secondary mt-2 w-100"
+              className="btn btn-sm btn-secondary w-100 mt-2"
             >
               Close
             </button>
