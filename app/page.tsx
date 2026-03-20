@@ -9,6 +9,24 @@ import {
   saveCampaigns,
 } from "@/app/lib/storage";
 
+// ================= TYPES =================
+type Contact = {
+  id: number;
+  name: string;
+  phone: string;
+  email: string;
+  tag: string;
+};
+
+type Campaign = {
+  id: number;
+  name: string;
+  audience: string;
+  message: string;
+  status: string;
+  tag: string;
+};
+
 export default function HomePage() {
   // ================= STATES =================
   const [showContactModal, setShowContactModal] = useState(false);
@@ -39,30 +57,65 @@ export default function HomePage() {
     message: "",
   });
 
-  // ================= DATA =================
-  const stats = [
-    { label: "Contacts", value: 128 },
-    { label: "Active Campaigns", value: 4 },
-    { label: "New Leads", value: 18 },
-    { label: "Messages Sent", value: 342 },
-  ];
+  // ================= SAVE CONTACT =================
+  const handleSaveContact = () => {
+    if (!contactForm.name || !contactForm.phone) return;
 
-  // ================= STYLES =================
-  const cardStyle: React.CSSProperties = {
-    background: "var(--card)",
-    color: "var(--text)",
-    border: "1px solid var(--border)",
-    borderRadius: 12,
-    padding: 16,
+    const contacts: Contact[] = getContacts();
+
+    const newContact: Contact = {
+      id: Date.now(),
+      name: contactForm.name,
+      phone: contactForm.phone,
+      email: contactForm.email,
+      tag: contactForm.tag,
+    };
+
+    saveContacts([...contacts, newContact]);
+
+    setContactForm({ name: "", phone: "", email: "", tag: "" });
+    closeContactModal();
+
+    setTimeout(() => {
+      setSuccess({
+        show: true,
+        title: "Success 🎉",
+        message: "Contact added successfully",
+        buttonText: "View Contacts",
+        redirectTo: "/contacts",
+      });
+    }, 200);
   };
 
-  const inputStyle: React.CSSProperties = {
-    padding: 10,
-    borderRadius: 8,
-    border: "1px solid var(--border)",
-    background: "var(--card)",
-    color: "var(--text)",
-    width: "100%",
+  // ================= SAVE CAMPAIGN =================
+  const handleSaveCampaign = () => {
+    if (!campaignForm.name || !campaignForm.message) return;
+
+    const campaigns: Campaign[] = getCampaigns();
+
+    const newCampaign: Campaign = {
+      id: Date.now(),
+      name: campaignForm.name,
+      audience: campaignForm.audience || "General",
+      message: campaignForm.message,
+      status: "draft",
+      tag: campaignForm.audience || "general",
+    };
+
+    saveCampaigns([...campaigns, newCampaign]);
+
+    setCampaignForm({ name: "", audience: "", message: "" });
+    closeCampaignModal();
+
+    setTimeout(() => {
+      setSuccess({
+        show: true,
+        title: "Success 🚀",
+        message: "Campaign created successfully",
+        buttonText: "View Campaigns",
+        redirectTo: "/campaigns",
+      });
+    }, 200);
   };
 
   // ================= MODALS =================
@@ -86,71 +139,6 @@ export default function HomePage() {
     setTimeout(() => setShowCampaignModal(false), 200);
   };
 
-  // ================= SAVE CONTACT =================
-  const handleSaveContact = () => {
-    const contacts = getContacts();
-
-    const newContact = {
-      id: Date.now(),
-      ...contactForm,
-    };
-
-    const updated = [...contacts, newContact];
-
-    saveContacts(updated);
-
-    closeContactModal();
-
-    setContactForm({
-      name: "",
-      phone: "",
-      email: "",
-      tag: "",
-    });
-
-    setTimeout(() => {
-      setSuccess({
-        show: true,
-        title: "Success 🎉",
-        message: "Contact added successfully",
-        buttonText: "View Contacts",
-        redirectTo: "/contacts",
-      });
-    }, 200);
-  };
-
-  // ================= SAVE CAMPAIGN =================
-  const handleSaveCampaign = () => {
-    const campaigns = getCampaigns();
-
-    const newCampaign = {
-      id: Date.now(),
-      ...campaignForm,
-    };
-
-    const updated = [...campaigns, newCampaign];
-
-    saveCampaigns(updated);
-
-    closeCampaignModal();
-
-    setCampaignForm({
-      name: "",
-      audience: "",
-      message: "",
-    });
-
-    setTimeout(() => {
-      setSuccess({
-        show: true,
-        title: "Success 🚀",
-        message: "Campaign created successfully",
-        buttonText: "View Campaigns",
-        redirectTo: "/campaigns",
-      });
-    }, 200);
-  };
-
   // ================= UI =================
   return (
     <div
@@ -163,18 +151,6 @@ export default function HomePage() {
     >
       <h4>Dashboard</h4>
 
-      {/* STATS */}
-      <div className="row g-3 mb-4">
-        {stats.map((s, i) => (
-          <div key={i} className="col-12 col-sm-6 col-lg-3">
-            <div style={cardStyle}>
-              <div style={{ opacity: 0.7 }}>{s.label}</div>
-              <div style={{ fontSize: 24, fontWeight: 600 }}>{s.value}</div>
-            </div>
-          </div>
-        ))}
-      </div>
-
       {/* ACTIONS */}
       <div className="mb-4">
         <h6>Quick Actions</h6>
@@ -184,10 +160,7 @@ export default function HomePage() {
             + Add Contact
           </button>
 
-          <button
-            className="btn btn-outline-primary"
-            onClick={openCampaignModal}
-          >
+          <button className="btn btn-outline-primary" onClick={openCampaignModal}>
             + Create Campaign
           </button>
         </div>
@@ -198,57 +171,46 @@ export default function HomePage() {
         <>
           <div style={backdrop} onClick={closeContactModal} />
 
-          <div
-            style={{
-              ...modal,
-              opacity: animateContact ? 1 : 0,
-              transform: animateContact
-                ? "translate(-50%, -50%) scale(1)"
-                : "translate(-50%, -60%) scale(0.95)",
-            }}
-          >
+          <div style={modal}>
             <h5>Add Contact</h5>
 
             <input
-              style={inputStyle}
               placeholder="Name"
               value={contactForm.name}
               onChange={(e) =>
                 setContactForm({ ...contactForm, name: e.target.value })
               }
+              style={inputStyle}
             />
 
             <input
-              style={inputStyle}
               placeholder="Phone"
               value={contactForm.phone}
               onChange={(e) =>
                 setContactForm({ ...contactForm, phone: e.target.value })
               }
+              style={inputStyle}
             />
 
             <input
-              style={inputStyle}
               placeholder="Email"
               value={contactForm.email}
               onChange={(e) =>
                 setContactForm({ ...contactForm, email: e.target.value })
               }
+              style={inputStyle}
             />
 
             <input
-              style={inputStyle}
               placeholder="Tag"
               value={contactForm.tag}
               onChange={(e) =>
                 setContactForm({ ...contactForm, tag: e.target.value })
               }
+              style={inputStyle}
             />
 
-            <button
-              className="btn btn-primary w-100 mt-3"
-              onClick={handleSaveContact}
-            >
+            <button className="btn btn-primary w-100 mt-3" onClick={handleSaveContact}>
               Save Contact
             </button>
           </div>
@@ -260,32 +222,24 @@ export default function HomePage() {
         <>
           <div style={backdrop} onClick={closeCampaignModal} />
 
-          <div
-            style={{
-              ...modal,
-              opacity: animateCampaign ? 1 : 0,
-              transform: animateCampaign
-                ? "translate(-50%, -50%) scale(1)"
-                : "translate(-50%, -60%) scale(0.95)",
-            }}
-          >
+          <div style={modal}>
             <h5>Create Campaign</h5>
 
             <input
-              style={inputStyle}
               placeholder="Campaign Name"
               value={campaignForm.name}
               onChange={(e) =>
                 setCampaignForm({ ...campaignForm, name: e.target.value })
               }
+              style={inputStyle}
             />
 
             <select
-              style={inputStyle}
               value={campaignForm.audience}
               onChange={(e) =>
                 setCampaignForm({ ...campaignForm, audience: e.target.value })
               }
+              style={inputStyle}
             >
               <option value="">Select Audience</option>
               <option value="Customer">Customer</option>
@@ -294,18 +248,15 @@ export default function HomePage() {
             </select>
 
             <textarea
-              style={inputStyle}
               placeholder="Message..."
               value={campaignForm.message}
               onChange={(e) =>
                 setCampaignForm({ ...campaignForm, message: e.target.value })
               }
+              style={inputStyle}
             />
 
-            <button
-              className="btn btn-primary w-100 mt-3"
-              onClick={handleSaveCampaign}
-            >
+            <button className="btn btn-primary w-100 mt-3" onClick={handleSaveCampaign}>
               Launch Campaign
             </button>
           </div>
@@ -348,4 +299,14 @@ const backdrop: React.CSSProperties = {
   height: "100%",
   background: "rgba(0,0,0,0.4)",
   zIndex: 1040,
+};
+
+const inputStyle: React.CSSProperties = {
+  width: "100%",
+  padding: 10,
+  marginTop: 8,
+  borderRadius: 8,
+  border: "1px solid var(--border)",
+  background: "var(--card)",
+  color: "var(--text)",
 };
