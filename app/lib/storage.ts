@@ -9,7 +9,7 @@ export type Contact = {
 export type Campaign = {
   id: number;
   name: string;
-audience: string;
+  audience: string;
   tag: string;
   message: string;
   status: "Draft" | "Running" | "Completed";
@@ -20,7 +20,7 @@ export type Settings = {
   notifications: boolean;
   autoSave: boolean;
 
-  // optional future-safe fields (prevents overwrite issues)
+  // future-safe optional fields
   botType?: string;
   openaiKey?: string;
   grokKey?: string;
@@ -35,7 +35,7 @@ const CONTACT_KEY = "contacts";
 const CAMPAIGN_KEY = "campaigns";
 const SETTINGS_KEY = "settings";
 
-// ================= SAFE CHECK =================
+// ================= CLIENT CHECK =================
 const isClient = () => typeof window !== "undefined";
 
 // ================= SAFE GET =================
@@ -48,8 +48,9 @@ const safeGet = <T>(key: string, fallback: T): T => {
 
     const parsed = JSON.parse(data);
 
-    // prevent invalid object overwrite
-    if (parsed === null || parsed === undefined) return fallback;
+    if (parsed === null || parsed === undefined || typeof parsed !== "object") {
+      return fallback;
+    }
 
     return parsed as T;
   } catch (err) {
@@ -64,15 +65,17 @@ const safeSet = (key: string, value: any) => {
 
   try {
     localStorage.setItem(key, JSON.stringify(value));
-
-    // DEBUG (remove later if you want)
     console.log(`✅ Saved [${key}]`, value);
   } catch (err) {
     console.error(`❌ Storage write failed for key: ${key}`, err);
   }
 };
 
-// ================= CONTACTS =================
+
+
+// ======================================================
+// CONTACTS
+// ======================================================
 export const getContacts = (): Contact[] => {
   return safeGet<Contact[]>(CONTACT_KEY, []);
 };
@@ -83,8 +86,7 @@ export const saveContacts = (contacts: Contact[]) => {
 
 export const addContact = (contact: Contact) => {
   const contacts = getContacts();
-  contacts.push(contact);
-  saveContacts(contacts);
+  saveContacts([...contacts, contact]); // ✅ IMMUTABLE FIX
 };
 
 export const updateContact = (updated: Contact) => {
@@ -99,7 +101,11 @@ export const deleteContact = (id: number) => {
   saveContacts(contacts);
 };
 
-// ================= CAMPAIGNS =================
+
+
+// ======================================================
+// CAMPAIGNS
+// ======================================================
 export const getCampaigns = (): Campaign[] => {
   return safeGet<Campaign[]>(CAMPAIGN_KEY, []);
 };
@@ -110,8 +116,7 @@ export const saveCampaigns = (campaigns: Campaign[]) => {
 
 export const addCampaign = (campaign: Campaign) => {
   const campaigns = getCampaigns();
-  campaigns.push(campaign);
-  saveCampaigns(campaigns);
+  saveCampaigns([...campaigns, campaign]); // ✅ IMMUTABLE FIX
 };
 
 export const updateCampaign = (updated: Campaign) => {
@@ -126,20 +131,25 @@ export const deleteCampaign = (id: number) => {
   saveCampaigns(campaigns);
 };
 
-// ================= SETTINGS =================
+
+
+// ======================================================
+// SETTINGS
+// ======================================================
 export const getSettings = (): Settings => {
   return safeGet<Settings>(SETTINGS_KEY, {
     theme: "light",
     notifications: true,
     autoSave: true,
+    autoReply: false,
+    delay: 0,
   });
 };
 
-// 🔥 IMPORTANT FIX: merge instead of overwrite
 export const saveSettings = (settings: Settings) => {
   const existing = getSettings();
 
-  const merged = {
+  const merged: Settings = {
     ...existing,
     ...settings,
   };
