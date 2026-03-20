@@ -15,29 +15,13 @@ export default function ContactsPage() {
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
 
-  const contacts: Contact[] = [
-    {
-      id: 1,
-      name: "Ali Raza",
-      phone: "+92 300 1234567",
-      email: "ali@email.com",
-      tag: "Hot Lead",
-    },
-    {
-      id: 2,
-      name: "Sara Khan",
-      phone: "+92 301 9876543",
-      email: "sara@email.com",
-      tag: "Customer",
-    },
-    {
-      id: 3,
-      name: "John Doe",
-      phone: "+1 555 123456",
-      email: "john@email.com",
-      tag: "New",
-    },
-  ];
+import { getContacts, addContact } from "@/app/lib/storage";
+
+const [contacts, setContacts] = useState<Contact[]>([]);
+
+useEffect(() => {
+  setContacts(getContacts());
+}, []);
 
   const filteredContacts = contacts.filter((c) =>
     c.name.toLowerCase().includes(search.toLowerCase())
@@ -226,9 +210,24 @@ export default function ContactsPage() {
             </div>
 
             <div style={{ padding: 14, borderTop: "1px solid var(--border)" }}>
-              <button className="btn btn-primary w-100">
-                Save Contact
-              </button>
+              <button
+  className="btn btn-primary w-100"
+  onClick={() => {
+    const newContact = {
+      id: Date.now(),
+      name: "New User", // replace with input values later
+      phone: "000000000",
+      email: "test@email.com",
+      tag: "New",
+    };
+
+    addContact(newContact);
+    setContacts(getContacts());
+    setShowAddModal(false);
+  }}
+>
+  Save Contact
+</button>
             </div>
           </div>
         </>
