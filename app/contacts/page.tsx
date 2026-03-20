@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { getContacts, addContact } from "@/app/lib/storage";
 
 type Contact = {
   id: number;
@@ -15,7 +16,6 @@ export default function ContactsPage() {
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
 
-import { getContacts, addContact } from "@/app/lib/storage";
 
 const [contacts, setContacts] = useState<Contact[]>([]);
 
