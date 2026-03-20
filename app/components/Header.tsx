@@ -15,32 +15,26 @@ export default function Header() {
   const profileRef = useRef<HTMLDivElement>(null);
 
   const navItems = [
+    { name: "Home", path: "/" },
     { name: "Conversations", path: "/conversations" },
     { name: "Analytics", path: "/analytics" },
     { name: "Contacts", path: "/contacts" },
     { name: "Campaigns", path: "/campaigns" },
   ];
 
-  // ✅ SSR-safe outside click handler
   useEffect(() => {
     if (typeof window === "undefined") return;
 
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
 
-      if (
-        profileRef.current &&
-        !profileRef.current.contains(target)
-      ) {
+      if (profileRef.current && !profileRef.current.contains(target)) {
         setProfileOpen(false);
       }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   return (
@@ -61,127 +55,124 @@ export default function Header() {
       >
         <div className="container-fluid d-flex align-items-center justify-content-between">
 
-          {/* LEFT: PROFILE */}
-          <div
-            className="position-relative"
-            ref={profileRef}
-          >
-            <div
-              onClick={() => setProfileOpen((prev) => !prev)}
+          {/* LEFT: BRAND + PROFILE */}
+          <div className="d-flex align-items-center gap-3">
+
+            {/* BRAND */}
+            <Link
+              href="/"
               style={{
-                width: 40,
-                height: 40,
-                borderRadius: "50%",
-                background: "var(--border)",
+                textDecoration: "none",
+                fontWeight: 800,
+                fontSize: 20,
+                letterSpacing: "1px",
+                color: "var(--text)",
                 display: "flex",
                 alignItems: "center",
-                justifyContent: "center",
-                cursor: "pointer",
-                fontWeight: 600,
-                transition: "0.2s",
+                gap: 6,
               }}
             >
-              T
-            </div>
+              <span style={{
+                width: 10,
+                height: 10,
+                borderRadius: "50%",
+                background: "#0d6efd",
+                display: "inline-block"
+              }} />
+              EVB
+            </Link>
 
-            {/* DROPDOWN */}
-            <div
-              style={{
-                position: "absolute",
-                top: 50,
-                left: 0,
-                background: "var(--card)",
-                color: "var(--text)",
-                borderRadius: 12,
-                width: 200,
-                boxShadow: "0 12px 30px rgba(0,0,0,0.1)",
-                border: "1px solid var(--border)",
-                opacity: profileOpen ? 1 : 0,
-                transform: profileOpen
-                  ? "translateY(0)"
-                  : "translateY(-10px)",
-                pointerEvents: profileOpen ? "auto" : "none",
-                transition: "all 0.25s ease",
-                overflow: "hidden",
-              }}
-            >
-              {/* THEME TOGGLE */}
+            {/* PROFILE */}
+            <div className="position-relative" ref={profileRef}>
               <div
-                onClick={() => {
-                  toggleTheme();
-                  setProfileOpen(false);
-                }}
+                onClick={() => setProfileOpen((prev) => !prev)}
                 style={{
-                  padding: "12px 15px",
-                  cursor: "pointer",
+                  width: 40,
+                  height: 40,
+                  borderRadius: "50%",
+                  background: "var(--border)",
                   display: "flex",
-                  justifyContent: "space-between",
                   alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  fontWeight: 600,
+                  transition: "0.2s",
                 }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.background = "var(--border)")
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.background = "transparent")
-                }
               >
-                <span>
-                  {theme === "light"
-                    ? "🌙 Dark Mode"
-                    : "☀️ Light Mode"}
-                </span>
+                T
+              </div>
 
-                {/* Toggle UI */}
+              {/* DROPDOWN */}
+              <div
+                style={{
+                  position: "absolute",
+                  top: 50,
+                  left: 0,
+                  background: "var(--card)",
+                  color: "var(--text)",
+                  borderRadius: 12,
+                  width: 200,
+                  boxShadow: "0 12px 30px rgba(0,0,0,0.1)",
+                  border: "1px solid var(--border)",
+                  opacity: profileOpen ? 1 : 0,
+                  transform: profileOpen
+                    ? "translateY(0)"
+                    : "translateY(-10px)",
+                  pointerEvents: profileOpen ? "auto" : "none",
+                  transition: "all 0.25s ease",
+                  overflow: "hidden",
+                }}
+              >
+                {/* THEME TOGGLE */}
                 <div
+                  onClick={() => {
+                    toggleTheme();
+                    setProfileOpen(false);
+                  }}
                   style={{
-                    width: 36,
-                    height: 18,
-                    borderRadius: 20,
-                    background:
-                      theme === "light" ? "#ccc" : "#0d6efd",
-                    position: "relative",
-                    transition: "0.3s",
+                    padding: "12px 15px",
+                    cursor: "pointer",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
                   }}
                 >
+                  <span>
+                    {theme === "light" ? "🌙 Dark Mode" : "☀️ Light Mode"}
+                  </span>
+
                   <div
                     style={{
-                      width: 14,
-                      height: 14,
-                      borderRadius: "50%",
-                      background: "#fff",
-                      position: "absolute",
-                      top: 2,
-                      left: theme === "light" ? 2 : 20,
+                      width: 36,
+                      height: 18,
+                      borderRadius: 20,
+                      background: theme === "light" ? "#ccc" : "#0d6efd",
+                      position: "relative",
                       transition: "0.3s",
                     }}
-                  />
+                  >
+                    <div
+                      style={{
+                        width: 14,
+                        height: 14,
+                        borderRadius: "50%",
+                        background: "#fff",
+                        position: "absolute",
+                        top: 2,
+                        left: theme === "light" ? 2 : 20,
+                        transition: "0.3s",
+                      }}
+                    />
+                  </div>
                 </div>
-              </div>
 
-              {/* REMINDERS */}
-              <div
-                style={{ padding: "12px 15px", cursor: "pointer" }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.background = "var(--border)")
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.background = "transparent")
-                }
-              >
-                Reminders
-              </div>
+                <div style={{ padding: "12px 15px", cursor: "pointer" }}>
+                  Reminders
+                </div>
 
-              {/* SETTINGS */}
-              <div
-                style={{ padding: "12px 15px", cursor: "pointer" }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.background = "var(--border)")
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.background = "transparent")
-                }
-              >
-                Settings
+                <div style={{ padding: "12px 15px", cursor: "pointer" }}>
+                  Settings
+                </div>
               </div>
             </div>
           </div>
@@ -212,7 +203,7 @@ export default function Header() {
             })}
           </nav>
 
-          {/* MOBILE MENU BUTTON */}
+          {/* MOBILE MENU */}
           <div
             className="d-md-none"
             onClick={() => setMenuOpen(true)}
