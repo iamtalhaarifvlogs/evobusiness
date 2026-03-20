@@ -20,7 +20,6 @@ export type Settings = {
   notifications: boolean;
   autoSave: boolean;
 
-  // future-safe optional fields
   botType?: string;
   openaiKey?: string;
   grokKey?: string;
@@ -30,10 +29,32 @@ export type Settings = {
   delay?: number;
 };
 
+// ================= CHAT TYPES =================
+export type Chat = {
+  id: number;
+  contactId?: number;
+  name: string;
+  lastMessage: string;
+  updatedAt?: number;
+};
+
+export type Message = {
+  id: string;
+  sender: "user" | "agent" | "bot";
+  text: string;
+  timestamp: number;
+};
+
+export type MessagesMap = {
+  [chatId: number]: Message[];
+};
+
 // ================= KEYS =================
 const CONTACT_KEY = "contacts";
 const CAMPAIGN_KEY = "campaigns";
 const SETTINGS_KEY = "settings";
+const CHAT_KEY = "chats";
+const MESSAGE_KEY = "messagesMap";
 
 // ================= CLIENT CHECK =================
 const isClient = () => typeof window !== "undefined";
@@ -47,14 +68,11 @@ const safeGet = <T>(key: string, fallback: T): T => {
     if (!data) return fallback;
 
     const parsed = JSON.parse(data);
-
-    if (parsed === null || parsed === undefined || typeof parsed !== "object") {
-      return fallback;
-    }
+    if (!parsed || typeof parsed !== "object") return fallback;
 
     return parsed as T;
   } catch (err) {
-    console.warn(`safeGet failed for key: ${key}`, err);
+    console.warn(`safeGet failed for ${key}`, err);
     return fallback;
   }
 };
@@ -65,28 +83,25 @@ const safeSet = (key: string, value: any) => {
 
   try {
     localStorage.setItem(key, JSON.stringify(value));
-    console.log(`✅ Saved [${key}]`, value);
   } catch (err) {
-    console.error(`❌ Storage write failed for key: ${key}`, err);
+    console.error(`safeSet failed for ${key}`, err);
   }
 };
 
-
-
+//
 // ======================================================
 // CONTACTS
 // ======================================================
-export const getContacts = (): Contact[] => {
-  return safeGet<Contact[]>(CONTACT_KEY, []);
-};
+//
+export const getContacts = (): Contact[] =>
+  safeGet<Contact[]>(CONTACT_KEY, []);
 
-export const saveContacts = (contacts: Contact[]) => {
+export const saveContacts = (contacts: Contact[]) =>
   safeSet(CONTACT_KEY, contacts);
-};
 
 export const addContact = (contact: Contact) => {
   const contacts = getContacts();
-  saveContacts([...contacts, contact]); // ✅ IMMUTABLE FIX
+  saveContacts([...contacts, contact]);
 };
 
 export const updateContact = (updated: Contact) => {
@@ -101,22 +116,20 @@ export const deleteContact = (id: number) => {
   saveContacts(contacts);
 };
 
-
-
+//
 // ======================================================
 // CAMPAIGNS
 // ======================================================
-export const getCampaigns = (): Campaign[] => {
-  return safeGet<Campaign[]>(CAMPAIGN_KEY, []);
-};
+//
+export const getCampaigns = (): Campaign[] =>
+  safeGet<Campaign[]>(CAMPAIGN_KEY, []);
 
-export const saveCampaigns = (campaigns: Campaign[]) => {
+export const saveCampaigns = (campaigns: Campaign[]) =>
   safeSet(CAMPAIGN_KEY, campaigns);
-};
 
 export const addCampaign = (campaign: Campaign) => {
   const campaigns = getCampaigns();
-  saveCampaigns([...campaigns, campaign]); // ✅ IMMUTABLE FIX
+  saveCampaigns([...campaigns, campaign]);
 };
 
 export const updateCampaign = (updated: Campaign) => {
@@ -131,28 +144,91 @@ export const deleteCampaign = (id: number) => {
   saveCampaigns(campaigns);
 };
 
-
-
+//
 // ======================================================
 // SETTINGS
 // ======================================================
-export const getSettings = (): Settings => {
-  return safeGet<Settings>(SETTINGS_KEY, {
+//
+export const getSettings = (): Settings =>
+  safeGet<Settings>(SETTINGS_KEY, {
     theme: "light",
     notifications: true,
     autoSave: true,
     autoReply: false,
     delay: 0,
   });
-};
 
 export const saveSettings = (settings: Settings) => {
   const existing = getSettings();
 
-  const merged: Settings = {
+  safeSet(SETTINGS_KEY, {
     ...existing,
     ...settings,
+  });
+};
+
+//
+// ======================================================
+// CHATS
+// ======================================================
+//
+export const getChats = (): Chat[] =>
+  safeGet<Chat[]>(CHAT_KEY, []);
+
+export const saveChats = (chats: Chat[]) =>
+  safeSet(CHAT_KEY, chats);
+
+export const addChat = (chat: Chat) => {
+  const chats = getChats();
+  saveChats([...chats, chat]);
+};
+
+export const updateChat = (updated: Chat) => {
+  const chats = getChats().map((c) =>
+    c.id === updated.id ? updated : c
+  );
+  saveChats(chats);
+};
+
+export const deleteChat = (id: number) => {
+  const chats = getChats().filter((c) => c.id !== id);
+  saveChats(chats);
+};
+
+//
+// ======================================================
+// MESSAGES (PER CHAT)
+// ======================================================
+//
+export const getMessagesMap = (): MessagesMap =>
+  safeGet<MessagesMap>(MESSAGE_KEY, {});
+
+export const saveMessagesMap = (map: MessagesMap) =>
+  safeSet(MESSAGE_KEY, map);
+
+export const getMessages = (chatId: number): Message[] => {
+  const map = getMessagesMap();
+  return map[chatId] || [];
+};
+
+export const addMessage = (chatId: number, message: Message) => {
+  const map = getMessagesMap();
+
+  const existing = map[chatId] || [];
+
+  const updated = {
+    ...map,
+    [chatId]: [...existing, message],
   };
 
-  safeSet(SETTINGS_KEY, merged);
+  saveMessagesMap(updated);
+};
+
+export const setMessages = (chatId: number, messages: Message[]) => {
+  const map = getMessagesMap();
+
+  saveMessagesMap({
+    ...map,
+    [chatId]: messages,
+  });
 };
