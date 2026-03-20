@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { getContacts, addContact } from "@/app/lib/storage";
 
 type Contact = {
@@ -12,21 +12,53 @@ type Contact = {
 };
 
 export default function ContactsPage() {
+  // ================= STATE =================
   const [search, setSearch] = useState("");
+  const [contacts, setContacts] = useState<Contact[]>([]);
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
 
+  // form state (IMPORTANT FIX)
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [tag, setTag] = useState("");
 
-const [contacts, setContacts] = useState<Contact[]>([]);
+  // ================= LOAD DATA =================
+  useEffect(() => {
+    setContacts(getContacts());
+  }, []);
 
-useEffect(() => {
-  setContacts(getContacts());
-}, []);
-
+  // ================= FILTER =================
   const filteredContacts = contacts.filter((c) =>
     c.name.toLowerCase().includes(search.toLowerCase())
   );
 
+  // ================= SAVE CONTACT =================
+  const handleSave = () => {
+    const newContact: Contact = {
+      id: Date.now(),
+      name,
+      phone,
+      email,
+      tag,
+    };
+
+    addContact(newContact);
+
+    const updated = getContacts();
+    setContacts(updated);
+
+    // reset form
+    setName("");
+    setPhone("");
+    setEmail("");
+    setTag("");
+
+    setShowAddModal(false);
+  };
+
+  // ================= STYLES =================
   const cardStyle: React.CSSProperties = {
     background: "var(--card)",
     color: "var(--text)",
@@ -59,6 +91,14 @@ useEffect(() => {
     height: "100%",
     background: "rgba(0,0,0,0.4)",
     zIndex: 1040,
+  };
+
+  const inputStyle: React.CSSProperties = {
+    padding: 10,
+    borderRadius: 8,
+    border: "1px solid var(--border)",
+    background: "var(--card)",
+    color: "var(--text)",
   };
 
   return (
@@ -100,22 +140,10 @@ useEffect(() => {
             <div
               style={cardStyle}
               onClick={() => setSelectedContact(contact)}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = "var(--border)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = "var(--card)";
-              }}
             >
               <h6 className="mb-1">{contact.name}</h6>
-
-              <div style={{ fontSize: 13, opacity: 0.7 }}>
-                {contact.phone}
-              </div>
-
-              <div style={{ fontSize: 13, opacity: 0.7 }}>
-                {contact.email}
-              </div>
+              <div style={{ fontSize: 13, opacity: 0.7 }}>{contact.phone}</div>
+              <div style={{ fontSize: 13, opacity: 0.7 }}>{contact.email}</div>
 
               <span
                 style={{
@@ -134,100 +162,46 @@ useEffect(() => {
         ))}
       </div>
 
-      {/* CONTACT DETAILS MODAL */}
+      {/* DETAILS MODAL */}
       {selectedContact && (
         <>
           <div style={backdropStyle} onClick={() => setSelectedContact(null)} />
 
           <div style={modalStyle}>
-            <div
-              style={{
-                padding: 14,
-                borderBottom: "1px solid var(--border)",
-                display: "flex",
-                justifyContent: "space-between",
-              }}
-            >
-              <h5 style={{ margin: 0 }}>{selectedContact.name}</h5>
-
-              <button
-                onClick={() => setSelectedContact(null)}
-                className="btn btn-sm btn-outline-secondary"
-              >
-                ✕
-              </button>
+            <div style={{ padding: 14, borderBottom: "1px solid var(--border)" }}>
+              <h5>{selectedContact.name}</h5>
             </div>
 
             <div style={{ padding: 14 }}>
               <p><strong>Phone:</strong> {selectedContact.phone}</p>
               <p><strong>Email:</strong> {selectedContact.email}</p>
-              <p>
-                <strong>Tag:</strong>{" "}
-                <span style={{ opacity: 0.8 }}>
-                  {selectedContact.tag}
-                </span>
-              </p>
-            </div>
-
-            <div style={{ padding: 14, borderTop: "1px solid var(--border)" }}>
-              <button className="btn btn-primary w-100">
-                Start Conversation
-              </button>
+              <p><strong>Tag:</strong> {selectedContact.tag}</p>
             </div>
           </div>
         </>
       )}
 
-      {/* ADD CONTACT MODAL */}
+      {/* ADD MODAL */}
       {showAddModal && (
         <>
           <div style={backdropStyle} onClick={() => setShowAddModal(false)} />
 
           <div style={modalStyle}>
-            <div
-              style={{
-                padding: 14,
-                borderBottom: "1px solid var(--border)",
-                display: "flex",
-                justifyContent: "space-between",
-              }}
-            >
-              <h5 style={{ margin: 0 }}>Add Contact</h5>
-
-              <button
-                onClick={() => setShowAddModal(false)}
-                className="btn btn-sm btn-outline-secondary"
-              >
-                ✕
-              </button>
+            <div style={{ padding: 14, borderBottom: "1px solid var(--border)" }}>
+              <h5>Add Contact</h5>
             </div>
 
             <div style={{ padding: 14, display: "flex", flexDirection: "column", gap: 10 }}>
-              <input style={inputStyle} placeholder="Name" />
-              <input style={inputStyle} placeholder="Phone" />
-              <input style={inputStyle} placeholder="Email" />
-              <input style={inputStyle} placeholder="Tag" />
+              <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" style={inputStyle} />
+              <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Phone" style={inputStyle} />
+              <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" style={inputStyle} />
+              <input value={tag} onChange={(e) => setTag(e.target.value)} placeholder="Tag" style={inputStyle} />
             </div>
 
             <div style={{ padding: 14, borderTop: "1px solid var(--border)" }}>
-              <button
-  className="btn btn-primary w-100"
-  onClick={() => {
-    const newContact = {
-      id: Date.now(),
-      name: "New User", // replace with input values later
-      phone: "000000000",
-      email: "test@email.com",
-      tag: "New",
-    };
-
-    addContact(newContact);
-    setContacts(getContacts());
-    setShowAddModal(false);
-  }}
->
-  Save Contact
-</button>
+              <button className="btn btn-primary w-100" onClick={handleSave}>
+                Save Contact
+              </button>
             </div>
           </div>
         </>
@@ -235,11 +209,3 @@ useEffect(() => {
     </div>
   );
 }
-
-const inputStyle: React.CSSProperties = {
-  padding: 10,
-  borderRadius: 8,
-  border: "1px solid var(--border)",
-  background: "var(--card)",
-  color: "var(--text)",
-};
