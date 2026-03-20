@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getContacts } from "@/lib/storage"; // 👈 adjust path if needed
+import { getContacts } from "@/app/lib/storage"; // 👈 adjust path if needed
 
 type Chat = {
   id: number;
