@@ -1,7 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getContacts, addContact } from "@/app/lib/storage";
+import {
+  getContacts,
+  addContact,
+  updateContact,
+  deleteContact,
+} from "@/app/lib/storage";
+
 import SuccessModal from "@/app/components/SuccessModal";
 
 type Contact = {
@@ -16,14 +22,21 @@ export default function ContactsPage() {
   const [search, setSearch] = useState("");
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
-  const [showAddModal, setShowAddModal] = useState(false);
 
+  // modals
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  // edit mode
+  const [editingId, setEditingId] = useState<number | null>(null);
+
+  // form
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [tag, setTag] = useState("");
 
-  const [showSuccess, setShowSuccess] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -36,6 +49,28 @@ export default function ContactsPage() {
 
   const isValidEmail = (email: string) => /\S+@\S+\.\S+/.test(email);
 
+  // ================= RESET FORM =================
+  const resetForm = () => {
+    setName("");
+    setPhone("");
+    setEmail("");
+    setTag("");
+    setEditingId(null);
+    setError("");
+  };
+
+  // ================= OPEN EDIT =================
+  const handleEdit = (contact: Contact) => {
+    setName(contact.name);
+    setPhone(contact.phone);
+    setEmail(contact.email);
+    setTag(contact.tag);
+
+    setEditingId(contact.id);
+    setShowAddModal(true);
+  };
+
+  // ================= SAVE (CREATE + UPDATE) =================
   const handleSave = () => {
     setError("");
 
@@ -49,33 +84,53 @@ export default function ContactsPage() {
       return;
     }
 
-    const newContact: Contact = {
-      id: Date.now(),
-      name,
-      phone,
-      email,
-      tag,
-    };
+    if (editingId !== null) {
+      updateContact({
+        id: editingId,
+        name,
+        phone,
+        email,
+        tag,
+      });
 
-    addContact(newContact);
+      setShowSuccess(true);
+    } else {
+      addContact({
+        id: Date.now(),
+        name,
+        phone,
+        email,
+        tag,
+      });
+
+      setShowSuccess(true);
+    }
+
+    setContacts(getContacts());
+    setShowAddModal(false);
+    resetForm();
+  };
+
+  // ================= DELETE =================
+  const handleDelete = () => {
+    if (!selectedContact) return;
+
+    deleteContact(selectedContact.id);
     setContacts(getContacts());
 
-    setName("");
-    setPhone("");
-    setEmail("");
-    setTag("");
-
-    setShowAddModal(false);
+    setSelectedContact(null);
+    setShowDeleteModal(false);
     setShowSuccess(true);
   };
 
+  // ================= STYLES =================
   const cardStyle: React.CSSProperties = {
     background: "var(--card)",
     color: "var(--text)",
     border: "1px solid var(--border)",
     borderRadius: 12,
     padding: 16,
-    cursor: "pointer",
+    position: "relative",
   };
 
   const modalStyle: React.CSSProperties = {
@@ -111,7 +166,7 @@ export default function ContactsPage() {
   return (
     <div className="container-fluid py-3">
 
-      {/* HEADER (FIXED RESPONSIVE) */}
+      {/* HEADER */}
       <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2 mb-3">
 
         <h5 className="mb-0">Contacts</h5>
@@ -121,44 +176,71 @@ export default function ContactsPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search..."
-            style={{
-              ...inputStyle,
-              maxWidth: 260,
-            }}
+            style={{ ...inputStyle, maxWidth: 260 }}
           />
 
           <button
             className="btn btn-primary"
-            onClick={() => setShowAddModal(true)}
+            onClick={() => {
+              resetForm();
+              setShowAddModal(true);
+            }}
           >
             + Add
           </button>
         </div>
-
       </div>
 
       {/* CONTACTS */}
       <div className="row g-3">
         {filteredContacts.map((contact) => (
           <div key={contact.id} className="col-12 col-md-4">
-            <div style={cardStyle} onClick={() => setSelectedContact(contact)}>
-              <h6>{contact.name}</h6>
-              <div style={{ fontSize: 13 }}>{contact.phone}</div>
-              <div style={{ fontSize: 13 }}>{contact.email}</div>
-              <small>{contact.tag}</small>
+            <div style={cardStyle}>
+
+              {/* INFO (click to view) */}
+              <div
+                onClick={() => setSelectedContact(contact)}
+                style={{ cursor: "pointer" }}
+              >
+                <h6>{contact.name}</h6>
+                <div style={{ fontSize: 13 }}>{contact.phone}</div>
+                <div style={{ fontSize: 13 }}>{contact.email}</div>
+                <small>{contact.tag}</small>
+              </div>
+
+              {/* ACTIONS (BOTTOM LEFT) */}
+              <div className="d-flex gap-2 mt-3">
+                <button
+                  className="btn btn-sm btn-outline-primary"
+                  onClick={() => handleEdit(contact)}
+                >
+                  Edit
+                </button>
+
+                <button
+                  className="btn btn-sm btn-outline-danger"
+                  onClick={() => {
+                    setSelectedContact(contact);
+                    setShowDeleteModal(true);
+                  }}
+                >
+                  Delete
+                </button>
+              </div>
+
             </div>
           </div>
         ))}
       </div>
 
-      {/* ADD MODAL */}
+      {/* ADD / EDIT MODAL */}
       {showAddModal && (
         <>
           <div style={backdropStyle} onClick={() => setShowAddModal(false)} />
 
           <div style={modalStyle}>
             <div style={{ padding: 15, borderBottom: "1px solid var(--border)" }}>
-              <h5>Add Contact</h5>
+              <h5>{editingId ? "Edit Contact" : "Add Contact"}</h5>
             </div>
 
             <div style={{ padding: 15, display: "flex", flexDirection: "column", gap: 10 }}>
@@ -172,7 +254,39 @@ export default function ContactsPage() {
 
             <div style={{ padding: 15, borderTop: "1px solid var(--border)" }}>
               <button className="btn btn-primary w-100" onClick={handleSave}>
-                Save Contact
+                {editingId ? "Save Changes" : "Save Contact"}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* DELETE CONFIRMATION MODAL */}
+      {showDeleteModal && selectedContact && (
+        <>
+          <div style={backdropStyle} onClick={() => setShowDeleteModal(false)} />
+
+          <div style={modalStyle}>
+            <div style={{ padding: 15 }}>
+              <h5>Are you sure?</h5>
+              <p>
+                You are about to delete <b>{selectedContact.name}</b>
+              </p>
+            </div>
+
+            <div className="d-flex gap-2 p-3">
+              <button
+                className="btn btn-secondary w-50"
+                onClick={() => setShowDeleteModal(false)}
+              >
+                Cancel
+              </button>
+
+              <button
+                className="btn btn-danger w-50"
+                onClick={handleDelete}
+              >
+                Delete
               </button>
             </div>
           </div>
@@ -182,15 +296,15 @@ export default function ContactsPage() {
       {/* SUCCESS MODAL */}
       <SuccessModal
         show={showSuccess}
-        title="Contact Added 🎉"
-        message="Your contact has been saved successfully."
-        buttonText="View Contacts"
+        title="Action Successful 🎉"
+        message="Your changes have been saved successfully."
+        buttonText="Okay"
         redirectTo="/contacts"
         onClose={() => setShowSuccess(false)}
       />
 
       {/* DETAILS MODAL */}
-      {selectedContact && (
+      {selectedContact && !showDeleteModal && (
         <>
           <div style={backdropStyle} onClick={() => setSelectedContact(null)} />
 
@@ -204,6 +318,7 @@ export default function ContactsPage() {
           </div>
         </>
       )}
+
     </div>
   );
 }
