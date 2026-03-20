@@ -14,18 +14,47 @@ export type Campaign = {
   status: "Draft" | "Running" | "Completed";
 };
 
-// ================= HELPERS =================
+// ================= SETTINGS TYPE (NEW) =================
+export type Settings = {
+  theme: "light" | "dark";
+  notifications: boolean;
+  autoSave: boolean;
+};
+
+// ================= KEYS =================
 const CONTACT_KEY = "contacts";
 const CAMPAIGN_KEY = "campaigns";
+const SETTINGS_KEY = "settings";
 
-// -------- CONTACTS --------
+// ================= SAFE STORAGE CORE =================
+const isClient = () => typeof window !== "undefined";
+
+const safeGet = <T>(key: string, fallback: T): T => {
+  if (!isClient()) return fallback;
+  try {
+    const data = localStorage.getItem(key);
+    return data ? (JSON.parse(data) as T) : fallback;
+  } catch {
+    return fallback;
+  }
+};
+
+const safeSet = (key: string, value: any) => {
+  if (!isClient()) return;
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (err) {
+    console.error("Storage write failed:", err);
+  }
+};
+
+// ================= CONTACTS =================
 export const getContacts = (): Contact[] => {
-  if (typeof window === "undefined") return [];
-  return JSON.parse(localStorage.getItem(CONTACT_KEY) || "[]");
+  return safeGet<Contact[]>(CONTACT_KEY, []);
 };
 
 export const saveContacts = (contacts: Contact[]) => {
-  localStorage.setItem(CONTACT_KEY, JSON.stringify(contacts));
+  safeSet(CONTACT_KEY, contacts);
 };
 
 export const addContact = (contact: Contact) => {
@@ -46,14 +75,13 @@ export const deleteContact = (id: number) => {
   saveContacts(contacts);
 };
 
-// -------- CAMPAIGNS --------
+// ================= CAMPAIGNS =================
 export const getCampaigns = (): Campaign[] => {
-  if (typeof window === "undefined") return [];
-  return JSON.parse(localStorage.getItem(CAMPAIGN_KEY) || "[]");
+  return safeGet<Campaign[]>(CAMPAIGN_KEY, []);
 };
 
 export const saveCampaigns = (campaigns: Campaign[]) => {
-  localStorage.setItem(CAMPAIGN_KEY, JSON.stringify(campaigns));
+  safeSet(CAMPAIGN_KEY, campaigns);
 };
 
 export const addCampaign = (campaign: Campaign) => {
@@ -72,4 +100,17 @@ export const updateCampaign = (updated: Campaign) => {
 export const deleteCampaign = (id: number) => {
   const campaigns = getCampaigns().filter((c) => c.id !== id);
   saveCampaigns(campaigns);
+};
+
+// ================= SETTINGS (NEW FIX) =================
+export const getSettings = (): Settings => {
+  return safeGet<Settings>(SETTINGS_KEY, {
+    theme: "light",
+    notifications: true,
+    autoSave: true,
+  });
+};
+
+export const saveSettings = (settings: Settings) => {
+  safeSet(SETTINGS_KEY, settings);
 };
