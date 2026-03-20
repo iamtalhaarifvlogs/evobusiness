@@ -14,11 +14,19 @@ export type Campaign = {
   status: "Draft" | "Running" | "Completed";
 };
 
-// ================= SETTINGS TYPE (NEW) =================
 export type Settings = {
   theme: "light" | "dark";
   notifications: boolean;
   autoSave: boolean;
+
+  // optional future-safe fields (prevents overwrite issues)
+  botType?: string;
+  openaiKey?: string;
+  grokKey?: string;
+  phoneId?: string;
+  accessToken?: string;
+  autoReply?: boolean;
+  delay?: number;
 };
 
 // ================= KEYS =================
@@ -26,25 +34,40 @@ const CONTACT_KEY = "contacts";
 const CAMPAIGN_KEY = "campaigns";
 const SETTINGS_KEY = "settings";
 
-// ================= SAFE STORAGE CORE =================
+// ================= SAFE CHECK =================
 const isClient = () => typeof window !== "undefined";
 
+// ================= SAFE GET =================
 const safeGet = <T>(key: string, fallback: T): T => {
   if (!isClient()) return fallback;
+
   try {
     const data = localStorage.getItem(key);
-    return data ? (JSON.parse(data) as T) : fallback;
-  } catch {
+    if (!data) return fallback;
+
+    const parsed = JSON.parse(data);
+
+    // prevent invalid object overwrite
+    if (parsed === null || parsed === undefined) return fallback;
+
+    return parsed as T;
+  } catch (err) {
+    console.warn(`safeGet failed for key: ${key}`, err);
     return fallback;
   }
 };
 
+// ================= SAFE SET =================
 const safeSet = (key: string, value: any) => {
   if (!isClient()) return;
+
   try {
     localStorage.setItem(key, JSON.stringify(value));
+
+    // DEBUG (remove later if you want)
+    console.log(`✅ Saved [${key}]`, value);
   } catch (err) {
-    console.error("Storage write failed:", err);
+    console.error(`❌ Storage write failed for key: ${key}`, err);
   }
 };
 
@@ -102,7 +125,7 @@ export const deleteCampaign = (id: number) => {
   saveCampaigns(campaigns);
 };
 
-// ================= SETTINGS (NEW FIX) =================
+// ================= SETTINGS =================
 export const getSettings = (): Settings => {
   return safeGet<Settings>(SETTINGS_KEY, {
     theme: "light",
@@ -111,6 +134,14 @@ export const getSettings = (): Settings => {
   });
 };
 
+// 🔥 IMPORTANT FIX: merge instead of overwrite
 export const saveSettings = (settings: Settings) => {
-  safeSet(SETTINGS_KEY, settings);
+  const existing = getSettings();
+
+  const merged = {
+    ...existing,
+    ...settings,
+  };
+
+  safeSet(SETTINGS_KEY, merged);
 };
