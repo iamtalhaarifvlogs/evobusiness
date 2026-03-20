@@ -10,14 +10,7 @@ import {
 
 import SuccessModal from "@/app/components/SuccessModal";
 
-type Campaign = {
-  id: number;
-  name: string;
-  tag: string;
-audience: string;
-  message: string;
-  status: "Draft" | "Running" | "Completed";
-};
+import type { Campaign } from "@/app/lib/storage";
 
 export default function CampaignsPage() {
   // ================= STATE =================
@@ -29,9 +22,10 @@ export default function CampaignsPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
 
-  // form
+  // form state
   const [name, setName] = useState("");
   const [tag, setTag] = useState("");
+  const [audience, setAudience] = useState("");
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState<"Draft" | "Running" | "Completed">("Draft");
 
@@ -46,6 +40,7 @@ export default function CampaignsPage() {
   const resetForm = () => {
     setName("");
     setTag("");
+    setAudience("");
     setMessage("");
     setStatus("Draft");
     setEditingId(null);
@@ -56,15 +51,15 @@ export default function CampaignsPage() {
   const handleEdit = (campaign: Campaign) => {
     setName(campaign.name);
     setTag(campaign.tag);
+    setAudience(campaign.audience);
     setMessage(campaign.message);
     setStatus(campaign.status);
-    setAudience(campaign.tag);
 
     setEditingId(campaign.id);
     setShowModal(true);
   };
 
-  // ================= SAVE (CREATE + UPDATE) =================
+  // ================= SAVE =================
   const handleSave = () => {
     setError("");
 
@@ -73,32 +68,24 @@ export default function CampaignsPage() {
       return;
     }
 
+    const payload: Campaign = {
+      id: editingId ?? Date.now(),
+      name,
+      tag,
+      audience,
+      message,
+      status,
+    };
+
     if (editingId !== null) {
-      updateCampaign({
-        id: editingId,
-        name,
-        tag,
-        audience,
-        message,
-        status,
-      });
-
-      setShowSuccess(true);
+      updateCampaign(payload);
     } else {
-      addCampaign({
-        id: Date.now(),
-        name,
-        tag,
-        audience,
-        message,
-        status,
-      });
-
-      setShowSuccess(true);
+      addCampaign(payload);
     }
 
     setCampaigns(getCampaigns());
     setShowModal(false);
+    setShowSuccess(true);
     resetForm();
   };
 
@@ -145,7 +132,6 @@ export default function CampaignsPage() {
     border: "1px solid var(--border)",
     borderRadius: 12,
     padding: 16,
-    position: "relative",
   };
 
   const modalStyle: React.CSSProperties = {
@@ -176,9 +162,9 @@ export default function CampaignsPage() {
     background: "var(--card)",
     color: "var(--text)",
     width: "100%",
-    outline: "none",
   };
 
+  // ================= UI =================
   return (
     <div className="container-fluid py-3">
 
@@ -204,7 +190,7 @@ export default function CampaignsPage() {
             <div style={cardStyle}>
 
               <div className="d-flex justify-content-between mb-2">
-                <h6 className="mb-0">{campaign.name}</h6>
+                <h6>{campaign.name}</h6>
 
                 <span style={{
                   ...getStatusStyle(campaign.status),
@@ -217,14 +203,13 @@ export default function CampaignsPage() {
               </div>
 
               <div style={{ fontSize: 13, opacity: 0.7 }}>
-                Audience: {campaign.tag}
+                Audience: {campaign.audience}
               </div>
 
               <p style={{ fontSize: 14, marginTop: 10 }}>
                 {campaign.message}
               </p>
 
-              {/* ACTIONS */}
               <div className="d-flex gap-2 mt-3">
                 <button
                   className="btn btn-sm btn-outline-primary"
@@ -249,7 +234,7 @@ export default function CampaignsPage() {
         ))}
       </div>
 
-      {/* MODAL (CREATE / EDIT) */}
+      {/* MODAL */}
       {showModal && (
         <>
           <div style={backdropStyle} onClick={() => setShowModal(false)} />
@@ -271,7 +256,10 @@ export default function CampaignsPage() {
               <select
                 style={inputStyle}
                 value={tag}
-                onChange={(e) => setTag(e.target.value)}
+                onChange={(e) => {
+                  setTag(e.target.value);
+                  setAudience(e.target.value);
+                }}
               >
                 <option value="">Select Audience Tag</option>
                 <option value="Customer">Customer</option>
@@ -308,7 +296,7 @@ export default function CampaignsPage() {
         </>
       )}
 
-      {/* DELETE MODAL */}
+      {/* DELETE */}
       {showDeleteModal && selectedCampaign && (
         <>
           <div style={backdropStyle} onClick={() => setShowDeleteModal(false)} />
@@ -316,23 +304,14 @@ export default function CampaignsPage() {
           <div style={modalStyle}>
             <div style={{ padding: 15 }}>
               <h5>Are you sure?</h5>
-              <p>
-                Delete <b>{selectedCampaign.name}</b> campaign?
-              </p>
+              <p>Delete <b>{selectedCampaign.name}</b>?</p>
             </div>
 
             <div className="d-flex gap-2 p-3">
-              <button
-                className="btn btn-secondary w-50"
-                onClick={() => setShowDeleteModal(false)}
-              >
+              <button className="btn btn-secondary w-50" onClick={() => setShowDeleteModal(false)}>
                 Cancel
               </button>
-
-              <button
-                className="btn btn-danger w-50"
-                onClick={handleDelete}
-              >
+              <button className="btn btn-danger w-50" onClick={handleDelete}>
                 Delete
               </button>
             </div>
@@ -340,12 +319,12 @@ export default function CampaignsPage() {
         </>
       )}
 
-      {/* SUCCESS MODAL */}
+      {/* SUCCESS */}
       <SuccessModal
         show={showSuccess}
-        title="Action Successful 🚀"
-        message="Your campaign has been updated successfully."
-        buttonText="Okay"
+        title="Success"
+        message="Operation completed successfully."
+        buttonText="OK"
         redirectTo="/campaigns"
         onClose={() => setShowSuccess(false)}
       />
