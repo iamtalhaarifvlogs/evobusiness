@@ -9,21 +9,14 @@ import {
   saveCampaigns,
 } from "@/app/lib/storage";
 
+import type { Campaign } from "@/app/lib/storage";
+
 // ================= TYPES =================
 type Contact = {
   id: number;
   name: string;
   phone: string;
   email: string;
-  tag: string;
-};
-
-type Campaign = {
-  id: number;
-  name: string;
-  audience: string;
-  message: string;
-  status: string;
   tag: string;
 };
 
@@ -98,8 +91,8 @@ export default function HomePage() {
       name: campaignForm.name,
       audience: campaignForm.audience || "General",
       message: campaignForm.message,
-      status: "draft",
-      tag: campaignForm.audience || "general",
+      status: "Draft", // ✅ FIXED (was "draft")
+      tag: campaignForm.audience || "General",
     };
 
     saveCampaigns([...campaigns, newCampaign]);
@@ -166,7 +159,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* ================= CONTACT MODAL ================= */}
+      {/* CONTACT MODAL */}
       {showContactModal && (
         <>
           <div style={backdrop} onClick={closeContactModal} />
@@ -217,7 +210,7 @@ export default function HomePage() {
         </>
       )}
 
-      {/* ================= CAMPAIGN MODAL ================= */}
+      {/* CAMPAIGN MODAL */}
       {showCampaignModal && (
         <>
           <div style={backdrop} onClick={closeCampaignModal} />
@@ -263,7 +256,7 @@ export default function HomePage() {
         </>
       )}
 
-      {/* ================= SUCCESS ================= */}
+      {/* SUCCESS */}
       <SuccessModal
         show={success.show}
         title={success.title}
@@ -293,10 +286,7 @@ const modal: React.CSSProperties = {
 
 const backdrop: React.CSSProperties = {
   position: "fixed",
-  top: 0,
-  left: 0,
-  width: "100%",
-  height: "100%",
+  inset: 0,
   background: "rgba(0,0,0,0.4)",
   zIndex: 1040,
 };
