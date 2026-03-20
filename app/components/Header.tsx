@@ -44,107 +44,92 @@ export default function Header() {
           position: "sticky",
           top: 0,
           zIndex: 1000,
-          color: "var(--text)",
           borderBottom: "1px solid var(--border)",
+          color: "var(--text)",
         }}
       >
         <div className="container-fluid d-flex align-items-center justify-content-between">
 
-          {/* LEFT: PROFILE + NAV */}
-          <div className="d-flex align-items-center gap-3">
-
-            {/* PROFILE */}
-            <div className="position-relative" ref={profileRef}>
-              <div
-                onClick={() => setProfileOpen((p) => !p)}
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: "50%",
-                  background: "var(--border)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  cursor: "pointer",
-                  fontWeight: 600,
-                }}
-              >
-                T
-              </div>
-
-              {/* DROPDOWN */}
-              <div
-                style={{
-                  position: "absolute",
-                  top: 50,
-                  left: 0,
-                  width: 200,
-                  background: "var(--card)",
-                  border: "1px solid var(--border)",
-                  borderRadius: 12,
-                  boxShadow: "0 12px 30px rgba(0,0,0,0.1)",
-                  opacity: profileOpen ? 1 : 0,
-                  transform: profileOpen ? "translateY(0)" : "translateY(-10px)",
-                  pointerEvents: profileOpen ? "auto" : "none",
-                  transition: "0.25s",
-                  overflow: "hidden",
-                }}
-              >
-                <div
-                  onClick={() => {
-                    toggleTheme();
-                    setProfileOpen(false);
-                  }}
-                  style={{ padding: 12, cursor: "pointer" }}
-                >
-                  {theme === "light" ? "🌙 Dark Mode" : "☀️ Light Mode"}
-                </div>
-
-                <div style={{ padding: 12, cursor: "pointer" }}>
-                  Reminders
-                </div>
-
-                <div style={{ padding: 12, cursor: "pointer" }}>
-                  Settings
-                </div>
-              </div>
+          {/* LEFT: PROFILE */}
+          <div className="position-relative" ref={profileRef}>
+            <div
+              onClick={() => setProfileOpen((p) => !p)}
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: "50%",
+                background: "var(--border)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                fontWeight: 600,
+              }}
+            >
+              T
             </div>
 
-            {/* DESKTOP NAV */}
-            <nav className="d-none d-md-flex align-items-center gap-4">
-              {navItems.map((item) => {
-                const isActive = pathname === item.path;
+            {/* DROPDOWN */}
+            <div
+              style={{
+                position: "absolute",
+                top: 50,
+                left: 0,
+                width: 200,
+                background: "var(--card)",
+                border: "1px solid var(--border)",
+                borderRadius: 12,
+                boxShadow: "0 12px 30px rgba(0,0,0,0.1)",
+                opacity: profileOpen ? 1 : 0,
+                transform: profileOpen ? "translateY(0)" : "translateY(-10px)",
+                pointerEvents: profileOpen ? "auto" : "none",
+                transition: "0.25s",
+                overflow: "hidden",
+              }}
+            >
+              <div onClick={toggleTheme} style={{ padding: 12, cursor: "pointer" }}>
+                {theme === "light" ? "🌙 Dark Mode" : "☀️ Light Mode"}
+              </div>
 
-                return (
-                  <Link
-                    key={item.path}
-                    href={item.path}
-                    style={{
-                      textDecoration: "none",
-                      color: isActive ? "#0d6efd" : "var(--text)",
-                      fontWeight: isActive ? 600 : 400,
-                      borderBottom: isActive ? "2px solid #0d6efd" : "2px solid transparent",
-                      paddingBottom: 4,
-                    }}
-                  >
-                    {item.name}
-                  </Link>
-                );
-              })}
-            </nav>
+              <div style={{ padding: 12, cursor: "pointer" }}>Reminders</div>
+              <div style={{ padding: 12, cursor: "pointer" }}>Settings</div>
+            </div>
           </div>
 
-          {/* CENTER: BRAND */}
+          {/* CENTER: NAVIGATION */}
+          <nav className="d-none d-md-flex align-items-center gap-4">
+            {navItems.map((item) => {
+              const isActive = pathname === item.path;
+
+              return (
+                <Link
+                  key={item.path}
+                  href={item.path}
+                  style={{
+                    textDecoration: "none",
+                    color: isActive ? "#0d6efd" : "var(--text)",
+                    fontWeight: isActive ? 600 : 400,
+                    borderBottom: isActive
+                      ? "2px solid #0d6efd"
+                      : "2px solid transparent",
+                    paddingBottom: 4,
+                    transition: "0.2s",
+                  }}
+                >
+                  {item.name}
+                </Link>
+              );
+            })}
+          </nav>
+
+          {/* RIGHT: BRAND */}
           <Link
             href="/"
             style={{
-              position: "absolute",
-              left: "50%",
-              transform: "translateX(-50%)",
-              textDecoration: "none",
               fontWeight: 800,
               fontSize: 20,
               letterSpacing: "1px",
+              textDecoration: "none",
               color: "var(--text)",
               display: "flex",
               alignItems: "center",
@@ -162,7 +147,7 @@ export default function Header() {
             EVB
           </Link>
 
-          {/* RIGHT: MOBILE MENU */}
+          {/* MOBILE MENU */}
           <div
             className="d-md-none"
             onClick={() => setMenuOpen(true)}
@@ -183,9 +168,9 @@ export default function Header() {
           height: "100%",
           background: "var(--card)",
           borderLeft: "1px solid var(--border)",
-          zIndex: 1050,
           padding: 20,
           transition: "0.3s",
+          zIndex: 1050,
         }}
       >
         <div className="d-flex justify-content-between mb-4">
