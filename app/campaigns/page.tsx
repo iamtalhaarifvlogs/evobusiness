@@ -14,6 +14,7 @@ type Campaign = {
   id: number;
   name: string;
   tag: string;
+audience: string;
   message: string;
   status: "Draft" | "Running" | "Completed";
 };
@@ -76,6 +77,7 @@ export default function CampaignsPage() {
         id: editingId,
         name,
         tag,
+        audience,
         message,
         status,
       });
@@ -86,6 +88,7 @@ export default function CampaignsPage() {
         id: Date.now(),
         name,
         tag,
+        audience,
         message,
         status,
       });
