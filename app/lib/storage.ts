@@ -9,6 +9,7 @@ export type Contact = {
 export type Campaign = {
   id: number;
   name: string;
+audience: string;
   tag: string;
   message: string;
   status: "Draft" | "Running" | "Completed";
