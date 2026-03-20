@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+
 import {
   getContacts,
   addContact,
@@ -19,19 +21,18 @@ type Contact = {
 };
 
 export default function ContactsPage() {
+  const router = useRouter();
+
   const [search, setSearch] = useState("");
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
 
-  // modals
   const [showAddModal, setShowAddModal] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
-  // edit mode
   const [editingId, setEditingId] = useState<number | null>(null);
 
-  // form
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
@@ -49,7 +50,6 @@ export default function ContactsPage() {
 
   const isValidEmail = (email: string) => /\S+@\S+\.\S+/.test(email);
 
-  // ================= RESET FORM =================
   const resetForm = () => {
     setName("");
     setPhone("");
@@ -59,7 +59,6 @@ export default function ContactsPage() {
     setError("");
   };
 
-  // ================= OPEN EDIT =================
   const handleEdit = (contact: Contact) => {
     setName(contact.name);
     setPhone(contact.phone);
@@ -70,7 +69,6 @@ export default function ContactsPage() {
     setShowAddModal(true);
   };
 
-  // ================= SAVE (CREATE + UPDATE) =================
   const handleSave = () => {
     setError("");
 
@@ -92,8 +90,6 @@ export default function ContactsPage() {
         email,
         tag,
       });
-
-      setShowSuccess(true);
     } else {
       addContact({
         id: Date.now(),
@@ -102,16 +98,14 @@ export default function ContactsPage() {
         email,
         tag,
       });
-
-      setShowSuccess(true);
     }
 
     setContacts(getContacts());
+    setShowSuccess(true);
     setShowAddModal(false);
     resetForm();
   };
 
-  // ================= DELETE =================
   const handleDelete = () => {
     if (!selectedContact) return;
 
@@ -123,14 +117,17 @@ export default function ContactsPage() {
     setShowSuccess(true);
   };
 
-  // ================= STYLES =================
+  // ================= VIEW CHAT =================
+  const handleViewChat = (contact: Contact) => {
+    router.push(`/conversations?contactId=${contact.id}`);
+  };
+
   const cardStyle: React.CSSProperties = {
     background: "var(--card)",
     color: "var(--text)",
     border: "1px solid var(--border)",
     borderRadius: 12,
     padding: 16,
-    position: "relative",
   };
 
   const modalStyle: React.CSSProperties = {
@@ -171,7 +168,7 @@ export default function ContactsPage() {
 
         <h5 className="mb-0">Contacts</h5>
 
-        <div className="d-flex flex-column flex-sm-row gap-2 w-100 w-md-auto">
+        <div className="d-flex gap-2">
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -197,7 +194,7 @@ export default function ContactsPage() {
           <div key={contact.id} className="col-12 col-md-4">
             <div style={cardStyle}>
 
-              {/* INFO (click to view) */}
+              {/* INFO */}
               <div
                 onClick={() => setSelectedContact(contact)}
                 style={{ cursor: "pointer" }}
@@ -208,8 +205,9 @@ export default function ContactsPage() {
                 <small>{contact.tag}</small>
               </div>
 
-              {/* ACTIONS (BOTTOM LEFT) */}
-              <div className="d-flex gap-2 mt-3">
+              {/* ACTIONS */}
+              <div className="d-flex flex-wrap gap-2 mt-3">
+
                 <button
                   className="btn btn-sm btn-outline-primary"
                   onClick={() => handleEdit(contact)}
@@ -226,8 +224,16 @@ export default function ContactsPage() {
                 >
                   Delete
                 </button>
-              </div>
 
+                {/* ✅ NEW VIEW CHAT BUTTON */}
+                <button
+                  className="btn btn-sm btn-success"
+                  onClick={() => handleViewChat(contact)}
+                >
+                  View Chat
+                </button>
+
+              </div>
             </div>
           </div>
         ))}
@@ -261,7 +267,7 @@ export default function ContactsPage() {
         </>
       )}
 
-      {/* DELETE CONFIRMATION MODAL */}
+      {/* DELETE MODAL */}
       {showDeleteModal && selectedContact && (
         <>
           <div style={backdropStyle} onClick={() => setShowDeleteModal(false)} />
@@ -270,22 +276,15 @@ export default function ContactsPage() {
             <div style={{ padding: 15 }}>
               <h5>Are you sure?</h5>
               <p>
-                You are about to delete <b>{selectedContact.name}</b>
+                Delete <b>{selectedContact.name}</b>?
               </p>
             </div>
 
             <div className="d-flex gap-2 p-3">
-              <button
-                className="btn btn-secondary w-50"
-                onClick={() => setShowDeleteModal(false)}
-              >
+              <button className="btn btn-secondary w-50" onClick={() => setShowDeleteModal(false)}>
                 Cancel
               </button>
-
-              <button
-                className="btn btn-danger w-50"
-                onClick={handleDelete}
-              >
+              <button className="btn btn-danger w-50" onClick={handleDelete}>
                 Delete
               </button>
             </div>
@@ -293,11 +292,11 @@ export default function ContactsPage() {
         </>
       )}
 
-      {/* SUCCESS MODAL */}
+      {/* SUCCESS */}
       <SuccessModal
         show={showSuccess}
-        title="Action Successful 🎉"
-        message="Your changes have been saved successfully."
+        title="Success 🎉"
+        message="Action completed successfully"
         buttonText="Okay"
         redirectTo="/contacts"
         onClose={() => setShowSuccess(false)}
