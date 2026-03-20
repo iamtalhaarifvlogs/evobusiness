@@ -2,6 +2,12 @@
 
 import { useState } from "react";
 import SuccessModal from "@/app/components/SuccessModal";
+import {
+  getContacts,
+  saveContacts,
+  getCampaigns,
+  saveCampaigns,
+} from "@/app/lib/storage";
 
 export default function HomePage() {
   // ================= STATES =================
@@ -17,6 +23,20 @@ export default function HomePage() {
     message: "",
     buttonText: "",
     redirectTo: "",
+  });
+
+  // ================= FORM STATES =================
+  const [contactForm, setContactForm] = useState({
+    name: "",
+    phone: "",
+    email: "",
+    tag: "",
+  });
+
+  const [campaignForm, setCampaignForm] = useState({
+    name: "",
+    audience: "",
+    message: "",
   });
 
   // ================= DATA =================
@@ -42,9 +62,10 @@ export default function HomePage() {
     border: "1px solid var(--border)",
     background: "var(--card)",
     color: "var(--text)",
+    width: "100%",
   };
 
-  // ================= MODAL HANDLERS =================
+  // ================= MODALS =================
   const openContactModal = () => {
     setShowContactModal(true);
     setTimeout(() => setAnimateContact(true), 10);
@@ -65,6 +86,71 @@ export default function HomePage() {
     setTimeout(() => setShowCampaignModal(false), 200);
   };
 
+  // ================= SAVE CONTACT =================
+  const handleSaveContact = () => {
+    const contacts = getContacts();
+
+    const newContact = {
+      id: Date.now(),
+      ...contactForm,
+    };
+
+    const updated = [...contacts, newContact];
+
+    saveContacts(updated);
+
+    closeContactModal();
+
+    setContactForm({
+      name: "",
+      phone: "",
+      email: "",
+      tag: "",
+    });
+
+    setTimeout(() => {
+      setSuccess({
+        show: true,
+        title: "Success 🎉",
+        message: "Contact added successfully",
+        buttonText: "View Contacts",
+        redirectTo: "/contacts",
+      });
+    }, 200);
+  };
+
+  // ================= SAVE CAMPAIGN =================
+  const handleSaveCampaign = () => {
+    const campaigns = getCampaigns();
+
+    const newCampaign = {
+      id: Date.now(),
+      ...campaignForm,
+    };
+
+    const updated = [...campaigns, newCampaign];
+
+    saveCampaigns(updated);
+
+    closeCampaignModal();
+
+    setCampaignForm({
+      name: "",
+      audience: "",
+      message: "",
+    });
+
+    setTimeout(() => {
+      setSuccess({
+        show: true,
+        title: "Success 🚀",
+        message: "Campaign created successfully",
+        buttonText: "View Campaigns",
+        redirectTo: "/campaigns",
+      });
+    }, 200);
+  };
+
   // ================= UI =================
   return (
     <div
@@ -75,13 +161,7 @@ export default function HomePage() {
         minHeight: "100vh",
       }}
     >
-      {/* HEADER */}
-      <div className="mb-4">
-        <h4>Dashboard</h4>
-        <p style={{ opacity: 0.7 }}>
-          Welcome back — here’s what’s happening today
-        </p>
-      </div>
+      <h4>Dashboard</h4>
 
       {/* STATS */}
       <div className="row g-3 mb-4">
@@ -89,9 +169,7 @@ export default function HomePage() {
           <div key={i} className="col-12 col-sm-6 col-lg-3">
             <div style={cardStyle}>
               <div style={{ opacity: 0.7 }}>{s.label}</div>
-              <div style={{ fontSize: 24, fontWeight: 600 }}>
-                {s.value}
-              </div>
+              <div style={{ fontSize: 24, fontWeight: 600 }}>{s.value}</div>
             </div>
           </div>
         ))}
@@ -101,7 +179,7 @@ export default function HomePage() {
       <div className="mb-4">
         <h6>Quick Actions</h6>
 
-        <div className="d-flex flex-wrap gap-2">
+        <div className="d-flex gap-2 flex-wrap">
           <button className="btn btn-primary" onClick={openContactModal}>
             + Add Contact
           </button>
@@ -118,17 +196,8 @@ export default function HomePage() {
       {/* ================= CONTACT MODAL ================= */}
       {showContactModal && (
         <>
-          {/* BACKDROP */}
-          <div
-            onClick={closeContactModal}
-            style={{
-              ...backdrop,
-              opacity: animateContact ? 1 : 0,
-              transition: "opacity 0.2s ease",
-            }}
-          />
+          <div style={backdrop} onClick={closeContactModal} />
 
-          {/* MODAL */}
           <div
             style={{
               ...modal,
@@ -136,33 +205,49 @@ export default function HomePage() {
               transform: animateContact
                 ? "translate(-50%, -50%) scale(1)"
                 : "translate(-50%, -60%) scale(0.95)",
-              transition: "all 0.2s ease",
             }}
           >
             <h5>Add Contact</h5>
 
-            <div className="d-flex flex-column gap-2 mt-2">
-              <input style={inputStyle} placeholder="Name" />
-              <input style={inputStyle} placeholder="Phone" />
-              <input style={inputStyle} placeholder="Email" />
-              <input style={inputStyle} placeholder="Tag" />
-            </div>
+            <input
+              style={inputStyle}
+              placeholder="Name"
+              value={contactForm.name}
+              onChange={(e) =>
+                setContactForm({ ...contactForm, name: e.target.value })
+              }
+            />
+
+            <input
+              style={inputStyle}
+              placeholder="Phone"
+              value={contactForm.phone}
+              onChange={(e) =>
+                setContactForm({ ...contactForm, phone: e.target.value })
+              }
+            />
+
+            <input
+              style={inputStyle}
+              placeholder="Email"
+              value={contactForm.email}
+              onChange={(e) =>
+                setContactForm({ ...contactForm, email: e.target.value })
+              }
+            />
+
+            <input
+              style={inputStyle}
+              placeholder="Tag"
+              value={contactForm.tag}
+              onChange={(e) =>
+                setContactForm({ ...contactForm, tag: e.target.value })
+              }
+            />
 
             <button
               className="btn btn-primary w-100 mt-3"
-              onClick={() => {
-                closeContactModal();
-
-                setTimeout(() => {
-                  setSuccess({
-                    show: true,
-                    title: "Success 🎉",
-                    message: "Contact added successfully",
-                    buttonText: "View Contacts",
-                    redirectTo: "/contacts",
-                  });
-                }, 200);
-              }}
+              onClick={handleSaveContact}
             >
               Save Contact
             </button>
@@ -173,17 +258,8 @@ export default function HomePage() {
       {/* ================= CAMPAIGN MODAL ================= */}
       {showCampaignModal && (
         <>
-          {/* BACKDROP */}
-          <div
-            onClick={closeCampaignModal}
-            style={{
-              ...backdrop,
-              opacity: animateCampaign ? 1 : 0,
-              transition: "opacity 0.2s ease",
-            }}
-          />
+          <div style={backdrop} onClick={closeCampaignModal} />
 
-          {/* MODAL */}
           <div
             style={{
               ...modal,
@@ -191,42 +267,44 @@ export default function HomePage() {
               transform: animateCampaign
                 ? "translate(-50%, -50%) scale(1)"
                 : "translate(-50%, -60%) scale(0.95)",
-              transition: "all 0.2s ease",
             }}
           >
             <h5>Create Campaign</h5>
 
-            <div className="d-flex flex-column gap-2 mt-2">
-              <input style={inputStyle} placeholder="Campaign Name" />
+            <input
+              style={inputStyle}
+              placeholder="Campaign Name"
+              value={campaignForm.name}
+              onChange={(e) =>
+                setCampaignForm({ ...campaignForm, name: e.target.value })
+              }
+            />
 
-              <select style={inputStyle}>
-                <option>Select Audience</option>
-                <option>Customer</option>
-                <option>New</option>
-                <option>Hot Lead</option>
-              </select>
+            <select
+              style={inputStyle}
+              value={campaignForm.audience}
+              onChange={(e) =>
+                setCampaignForm({ ...campaignForm, audience: e.target.value })
+              }
+            >
+              <option value="">Select Audience</option>
+              <option value="Customer">Customer</option>
+              <option value="New">New</option>
+              <option value="Hot Lead">Hot Lead</option>
+            </select>
 
-              <textarea
-                style={inputStyle}
-                placeholder="Message..."
-              />
-            </div>
+            <textarea
+              style={inputStyle}
+              placeholder="Message..."
+              value={campaignForm.message}
+              onChange={(e) =>
+                setCampaignForm({ ...campaignForm, message: e.target.value })
+              }
+            />
 
             <button
               className="btn btn-primary w-100 mt-3"
-              onClick={() => {
-                closeCampaignModal();
-
-                setTimeout(() => {
-                  setSuccess({
-                    show: true,
-                    title: "Success 🚀",
-                    message: "Campaign created successfully",
-                    buttonText: "View Campaigns",
-                    redirectTo: "/campaigns",
-                  });
-                }, 200);
-              }}
+              onClick={handleSaveCampaign}
             >
               Launch Campaign
             </button>
@@ -234,29 +312,27 @@ export default function HomePage() {
         </>
       )}
 
-      {/* ================= SUCCESS MODAL ================= */}
+      {/* ================= SUCCESS ================= */}
       <SuccessModal
         show={success.show}
         title={success.title}
         message={success.message}
         buttonText={success.buttonText}
         redirectTo={success.redirectTo}
-        onClose={() =>
-          setSuccess((prev) => ({ ...prev, show: false }))
-        }
+        onClose={() => setSuccess((p) => ({ ...p, show: false }))}
       />
     </div>
   );
 }
 
-// ================= GLOBAL STYLES =================
+// ================= STYLES =================
 const modal: React.CSSProperties = {
   position: "fixed",
   top: "50%",
   left: "50%",
   transform: "translate(-50%, -50%)",
   width: "90%",
-  maxWidth: 400,
+  maxWidth: 420,
   background: "var(--card)",
   padding: 20,
   borderRadius: 12,
