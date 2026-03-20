@@ -1,10 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import SuccessModal from "@/app/components/SuccessModal";
+import { getSettings, saveSettings, Settings } from "@/app/lib/storage";
 
 export default function SettingsPage() {
   // ================= STATE =================
+  const [settings, setSettings] = useState<Settings>({
+    theme: "light",
+    notifications: true,
+    autoSave: true,
+  });
+
   const [botType, setBotType] = useState("openai");
 
   const [openaiKey, setOpenaiKey] = useState("");
@@ -17,6 +24,12 @@ export default function SettingsPage() {
   const [delay, setDelay] = useState(2);
 
   const [success, setSuccess] = useState(false);
+
+  // ================= LOAD SAVED SETTINGS =================
+  useEffect(() => {
+    const saved = getSettings();
+    setSettings(saved);
+  }, []);
 
   // ================= STYLES =================
   const cardStyle: React.CSSProperties = {
@@ -36,9 +49,15 @@ export default function SettingsPage() {
     width: "100%",
   };
 
+  // ================= UPDATE SETTINGS =================
+  const updateSettings = (key: keyof Settings, value: any) => {
+    const updated = { ...settings, [key]: value };
+    setSettings(updated);
+  };
+
   // ================= SAVE =================
   const handleSave = () => {
-    // later: save to localStorage / DB
+    saveSettings(settings);
     setSuccess(true);
   };
 
@@ -70,7 +89,6 @@ export default function SettingsPage() {
           </select>
         </div>
 
-        {/* CONDITIONAL INPUTS */}
         {botType === "openai" && (
           <div className="mt-2">
             <label>OpenAI API Key</label>
@@ -130,7 +148,7 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* ================= GENERAL SETTINGS ================= */}
+      {/* ================= AUTOMATION SETTINGS ================= */}
       <div style={cardStyle} className="mb-3">
         <h6>Automation Settings</h6>
 
@@ -139,7 +157,7 @@ export default function SettingsPage() {
           <input
             type="checkbox"
             checked={autoReply}
-            onChange={() => setAutoReply(!autoReply)}
+            onChange={(e) => setAutoReply(e.target.checked)}
           />
         </div>
 
@@ -150,6 +168,42 @@ export default function SettingsPage() {
             value={delay}
             onChange={(e) => setDelay(Number(e.target.value))}
             style={inputStyle}
+          />
+        </div>
+      </div>
+
+      {/* ================= GLOBAL SETTINGS (NEW FIXED STORAGE) ================= */}
+      <div style={cardStyle} className="mb-3">
+        <h6>App Preferences</h6>
+
+        <div className="d-flex justify-content-between align-items-center">
+          <span>Dark Mode</span>
+          <input
+            type="checkbox"
+            checked={settings.theme === "dark"}
+            onChange={(e) =>
+              updateSettings("theme", e.target.checked ? "dark" : "light")
+            }
+          />
+        </div>
+
+        <div className="d-flex justify-content-between align-items-center mt-2">
+          <span>Notifications</span>
+          <input
+            type="checkbox"
+            checked={settings.notifications}
+            onChange={(e) =>
+              updateSettings("notifications", e.target.checked)
+            }
+          />
+        </div>
+
+        <div className="d-flex justify-content-between align-items-center mt-2">
+          <span>Auto Save</span>
+          <input
+            type="checkbox"
+            checked={settings.autoSave}
+            onChange={(e) => updateSettings("autoSave", e.target.checked)}
           />
         </div>
       </div>
