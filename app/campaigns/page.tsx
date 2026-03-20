@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { getCampaigns, addCampaign } from "@/app/lib/storage";
+import SuccessModal from "@/app/components/SuccessModal";
 
 type Campaign = {
   id: number;
@@ -11,25 +13,80 @@ type Campaign = {
 };
 
 export default function CampaignsPage() {
+  // ================= STATE =================
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [showModal, setShowModal] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
 
-  const campaigns: Campaign[] = [
-    {
-      id: 1,
-      name: "Ramadan Offer",
-      tag: "Customer",
-      message: "Get 20% off this Ramadan!",
-      status: "Running",
-    },
-    {
-      id: 2,
-      name: "New Leads Intro",
-      tag: "New",
-      message: "Welcome! Let us guide you.",
-      status: "Draft",
-    },
-  ];
+  // form state
+  const [name, setName] = useState("");
+  const [tag, setTag] = useState("");
+  const [message, setMessage] = useState("");
 
+  const [error, setError] = useState("");
+
+  // ================= LOAD =================
+  useEffect(() => {
+    setCampaigns(getCampaigns());
+  }, []);
+
+  // ================= SAVE =================
+  const handleCreate = (status: "Draft" | "Running") => {
+    setError("");
+
+    // VALIDATION
+    if (!name || !tag || !message) {
+      setError("All fields are required");
+      return;
+    }
+
+    const newCampaign: Campaign = {
+      id: Date.now(),
+      name,
+      tag,
+      message,
+      status,
+    };
+
+    addCampaign(newCampaign);
+
+    const updated = getCampaigns();
+    setCampaigns(updated);
+
+    // reset form
+    setName("");
+    setTag("");
+    setMessage("");
+
+    setShowModal(false);
+    setShowSuccess(true);
+  };
+
+  // ================= STATUS STYLE =================
+  const getStatusStyle = (status: Campaign["status"]) => {
+    switch (status) {
+      case "Running":
+        return {
+          background: "rgba(34, 197, 94, 0.15)",
+          color: "#22c55e",
+          border: "1px solid rgba(34, 197, 94, 0.4)",
+        };
+      case "Draft":
+        return {
+          background: "rgba(148, 163, 184, 0.15)",
+          color: "#94a3b8",
+          border: "1px solid rgba(148, 163, 184, 0.4)",
+        };
+      case "Completed":
+        return {
+          background: "rgba(100, 116, 139, 0.15)",
+          color: "#64748b",
+          border: "1px solid rgba(100, 116, 139, 0.4)",
+        };
+    }
+  };
+
+  // ================= STYLES =================
   const cardStyle: React.CSSProperties = {
     background: "var(--card)",
     color: "var(--text)",
@@ -63,31 +120,17 @@ export default function CampaignsPage() {
     zIndex: 1040,
   };
 
-  const getStatusStyle = (status: Campaign["status"]) => {
-    switch (status) {
-      case "Running":
-        return {
-          background: "rgba(34, 197, 94, 0.15)",
-          color: "#22c55e",
-          border: "1px solid rgba(34, 197, 94, 0.4)",
-        };
-      case "Draft":
-        return {
-          background: "rgba(148, 163, 184, 0.15)",
-          color: "#94a3b8",
-          border: "1px solid rgba(148, 163, 184, 0.4)",
-        };
-      case "Completed":
-        return {
-          background: "rgba(100, 116, 139, 0.15)",
-          color: "#64748b",
-          border: "1px solid rgba(100, 116, 139, 0.4)",
-        };
-    }
+  const inputStyle: React.CSSProperties = {
+    padding: 10,
+    borderRadius: 8,
+    border: "1px solid var(--border)",
+    background: "var(--card)",
+    color: "var(--text)",
+    outline: "none",
   };
 
   return (
-    <div className="container-fluid py-3" style={{ color: "var(--text)" }}>
+    <div className="container-fluid py-3">
 
       {/* HEADER */}
       <div className="d-flex justify-content-between align-items-center mb-3">
@@ -101,14 +144,13 @@ export default function CampaignsPage() {
         </button>
       </div>
 
-      {/* CAMPAIGN LIST */}
+      {/* LIST */}
       <div className="row g-3">
         {campaigns.map((campaign) => (
           <div key={campaign.id} className="col-12 col-md-6 col-lg-4">
             <div style={cardStyle}>
 
-              {/* HEADER */}
-              <div className="d-flex justify-content-between align-items-start mb-2">
+              <div className="d-flex justify-content-between mb-2">
                 <h6 className="mb-0">{campaign.name}</h6>
 
                 <span style={{
@@ -121,102 +163,90 @@ export default function CampaignsPage() {
                 </span>
               </div>
 
-              {/* META */}
-              <div style={{ fontSize: 13, opacity: 0.7, marginBottom: 10 }}>
+              <div style={{ fontSize: 13, opacity: 0.7 }}>
                 Audience: {campaign.tag}
               </div>
 
-              {/* MESSAGE */}
-              <p style={{ fontSize: 14, marginBottom: 12 }}>
+              <p style={{ fontSize: 14, marginTop: 10 }}>
                 {campaign.message}
               </p>
-
-              {/* ACTIONS */}
-              <div className="d-flex gap-2">
-                <button className="btn btn-sm btn-outline-primary">
-                  Edit
-                </button>
-                <button className="btn btn-sm btn-outline-success">
-                  Start
-                </button>
-                <button className="btn btn-sm btn-outline-danger">
-                  Stop
-                </button>
-              </div>
-
             </div>
           </div>
         ))}
       </div>
 
-      {/* CREATE CAMPAIGN MODAL */}
+      {/* MODAL */}
       {showModal && (
         <>
           <div style={backdropStyle} onClick={() => setShowModal(false)} />
 
           <div style={modalStyle}>
-            <div
-              style={{
-                padding: 14,
-                borderBottom: "1px solid var(--border)",
-                display: "flex",
-                justifyContent: "space-between",
-              }}
-            >
-              <h5 style={{ margin: 0 }}>Create Campaign</h5>
-
-              <button
-                className="btn btn-sm btn-outline-secondary"
-                onClick={() => setShowModal(false)}
-              >
-                ✕
-              </button>
+            <div style={{ padding: 14, borderBottom: "1px solid var(--border)" }}>
+              <h5>Create Campaign</h5>
             </div>
 
             <div style={{ padding: 14, display: "flex", flexDirection: "column", gap: 10 }}>
-              <input style={inputStyle} placeholder="Campaign Name" />
 
-              <select style={inputStyle}>
-                <option>Select Audience Tag</option>
-                <option>Customer</option>
-                <option>New</option>
-                <option>Hot Lead</option>
+              <input
+                style={inputStyle}
+                placeholder="Campaign Name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+
+              <select
+                style={inputStyle}
+                value={tag}
+                onChange={(e) => setTag(e.target.value)}
+              >
+                <option value="">Select Audience Tag</option>
+                <option value="Customer">Customer</option>
+                <option value="New">New</option>
+                <option value="Hot Lead">Hot Lead</option>
               </select>
 
               <textarea
                 style={{ ...inputStyle, minHeight: 120 }}
                 placeholder="Enter campaign message..."
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
               />
+
+              {error && (
+                <div style={{ color: "red", fontSize: 13 }}>
+                  {error}
+                </div>
+              )}
             </div>
 
-            <div
-              style={{
-                padding: 14,
-                borderTop: "1px solid var(--border)",
-                display: "flex",
-                gap: 10,
-                justifyContent: "flex-end",
-              }}
-            >
-              <button className="btn btn-secondary">
+            <div style={{ padding: 14, borderTop: "1px solid var(--border)", display: "flex", gap: 10 }}>
+              <button
+                className="btn btn-secondary w-50"
+                onClick={() => handleCreate("Draft")}
+              >
                 Save Draft
               </button>
-              <button className="btn btn-primary">
-                Launch Campaign
+
+              <button
+                className="btn btn-primary w-50"
+                onClick={() => handleCreate("Running")}
+              >
+                Launch
               </button>
             </div>
           </div>
         </>
       )}
+
+      {/* SUCCESS MODAL */}
+      <SuccessModal
+        show={showSuccess}
+        title="Campaign Created 🚀"
+        message="Your campaign has been successfully saved."
+        buttonText="View Campaigns"
+        redirectTo="/campaigns"
+        onClose={() => setShowSuccess(false)}
+      />
     </div>
   );
 }
-
-const inputStyle: React.CSSProperties = {
-  padding: 10,
-  borderRadius: 8,
-  border: "1px solid var(--border)",
-  background: "var(--card)",
-  color: "var(--text)",
-  outline: "none",
-};
