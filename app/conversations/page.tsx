@@ -1,7 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getContacts } from "@/app/lib/storage"; // 👈 adjust path if needed
+import { getContacts } from "@/app/lib/storage";
+
+type Contact = {
+  id: number;
+  name: string;
+  phone?: string;
+};
 
 type Chat = {
   id: number;
@@ -10,20 +16,41 @@ type Chat = {
   lastMessage: string;
 };
 
-type Contact = {
-  id: number;
-  name: string;
-};
-
 type Message = {
   id: number;
   sender: "bot" | "user";
   text: string;
 };
 
+// ================= STORAGE KEYS =================
+const CHATS_KEY = "chats";
+const MESSAGES_KEY = "chat_messages";
+
+// ================= SAFE STORAGE =================
+const safeGet = <T,>(key: string, fallback: T): T => {
+  if (typeof window === "undefined") return fallback;
+
+  try {
+    const data = localStorage.getItem(key);
+    if (!data) return fallback;
+    return JSON.parse(data);
+  } catch {
+    return fallback;
+  }
+};
+
+const safeSet = (key: string, value: any) => {
+  if (typeof window === "undefined") return;
+
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (e) {
+    console.warn("Storage write failed", e);
+  }
+};
+
 export default function ConversationsPage() {
   const [contacts, setContacts] = useState<Contact[]>([]);
-
   const [chats, setChats] = useState<Chat[]>([]);
   const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
 
@@ -31,29 +58,30 @@ export default function ConversationsPage() {
   const [input, setInput] = useState("");
   const [showContacts, setShowContacts] = useState(false);
 
-  const [messagesMap, setMessagesMap] = useState<
-    Record<number, Message[]>
-  >({});
+  const [messagesMap, setMessagesMap] = useState<Record<number, Message[]>>({});
 
-  // ================= LOAD CONTACTS FROM STORAGE =================
+  // ================= LOAD DATA =================
   useEffect(() => {
-    const load = () => {
-      const stored = getContacts() || [];
-      setContacts(stored);
-    };
+    setContacts(getContacts());
 
-    load();
-
-    // optional live sync (if other page updates)
-    const interval = setInterval(load, 1000);
-    return () => clearInterval(interval);
+    setChats(safeGet<Chat[]>(CHATS_KEY, []));
+    setMessagesMap(safeGet<Record<number, Message[]>>(MESSAGES_KEY, {}));
   }, []);
+
+  // ================= PERSIST DATA =================
+  useEffect(() => {
+    safeSet(CHATS_KEY, chats);
+  }, [chats]);
+
+  useEffect(() => {
+    safeSet(MESSAGES_KEY, messagesMap);
+  }, [messagesMap]);
 
   const currentMessages = selectedChat
     ? messagesMap[selectedChat.id] || []
     : [];
 
-  // ================= CREATE CHAT FROM REAL CONTACT =================
+  // ================= START CHAT =================
   const startChatWithContact = (contact: Contact) => {
     const existing = chats.find((c) => c.contactId === contact.id);
 
@@ -71,7 +99,6 @@ export default function ConversationsPage() {
     };
 
     setChats((prev) => [newChat, ...prev]);
-
     setMessagesMap((prev) => ({
       ...prev,
       [newChat.id]: [],
@@ -129,7 +156,6 @@ export default function ConversationsPage() {
       <div className="d-flex justify-content-between mb-3">
         <h5>Conversations</h5>
 
-        {/* NOW REAL CONTACT-BASED FLOW */}
         <button
           onClick={() => setShowContacts(true)}
           className="btn btn-primary btn-sm rounded-pill"
@@ -181,24 +207,47 @@ export default function ConversationsPage() {
               width: "90%",
               maxWidth: 850,
               height: "85vh",
-              background: "var(--card)",
+              background: "#fff",
               borderRadius: 12,
               display: "flex",
               flexDirection: "column",
+              overflow: "hidden",
             }}
           >
             {/* HEADER */}
-            <div className="p-2 border-bottom d-flex justify-content-between">
+            <div className="p-2 border-bottom d-flex justify-content-between align-items-center">
               <b>{selectedChat.name}</b>
 
-              <button
-                onClick={() => setManualMode((p) => !p)}
-                className={`btn btn-sm ${
-                  manualMode ? "btn-danger" : "btn-success"
-                }`}
-              >
-                {manualMode ? "Manual" : "Bot"}
-              </button>
+              <div className="d-flex gap-2">
+                <button
+                  onClick={() => setManualMode((p) => !p)}
+                  className={`btn btn-sm ${
+                    manualMode ? "btn-danger" : "btn-success"
+                  }`}
+                >
+                  {manualMode ? "Manual" : "Bot"}
+                </button>
+
+                {/* CLOSE BUTTON */}
+                <button
+                  onClick={() => {
+                    setSelectedChat(null);
+                    setManualMode(false);
+                  }}
+                  className="btn btn-light btn-sm"
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: "50%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontWeight: "bold",
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
             </div>
 
             {/* MESSAGES */}
@@ -214,8 +263,8 @@ export default function ConversationsPage() {
                   <span
                     style={{
                       display: "inline-block",
-                      padding: 8,
-                      borderRadius: 10,
+                      padding: "8px 12px",
+                      borderRadius: 12,
                       background:
                         m.sender === "user" ? "#0d6efd" : "#eee",
                       color: m.sender === "user" ? "#fff" : "#000",
@@ -228,21 +277,29 @@ export default function ConversationsPage() {
             </div>
 
             {/* INPUT */}
-            <div className="p-2 border-top d-flex gap-2">
+            <div className="p-2 border-top d-flex gap-2 align-items-center">
               <input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 disabled={!manualMode}
                 className="form-control"
-                placeholder={
-                  manualMode ? "Type..." : "Switch to Manual"
-                }
+                placeholder={manualMode ? "Type message..." : "Switch to Manual"}
               />
 
+              {/* ROUND SEND BUTTON */}
               <button
                 onClick={sendMessage}
                 disabled={!manualMode}
                 className="btn btn-primary"
+                style={{
+                  width: 42,
+                  height: 42,
+                  borderRadius: "50%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: 0,
+                }}
               >
                 ➤
               </button>
@@ -267,10 +324,10 @@ export default function ConversationsPage() {
               top: "50%",
               left: "50%",
               transform: "translate(-50%, -50%)",
-              width: 300,
+              width: 320,
               background: "#fff",
               borderRadius: 10,
-              padding: 10,
+              padding: 12,
             }}
           >
             <h6>Select Contact</h6>
@@ -284,7 +341,7 @@ export default function ConversationsPage() {
                   onClick={() => startChatWithContact(c)}
                   style={{
                     padding: 8,
-                    borderBottom: "1px solid #ddd",
+                    borderBottom: "1px solid #eee",
                     cursor: "pointer",
                   }}
                 >
@@ -302,7 +359,6 @@ export default function ConversationsPage() {
           </div>
         </div>
       )}
-
     </div>
   );
 }
