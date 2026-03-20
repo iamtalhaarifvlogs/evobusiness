@@ -4,8 +4,14 @@ import { useMemo, useState } from "react";
 
 type Chat = {
   id: number;
+  contactId: number;
   name: string;
   lastMessage: string;
+};
+
+type Contact = {
+  id: number;
+  name: string;
 };
 
 type Message = {
@@ -19,39 +25,48 @@ export default function ConversationsPage() {
   const [manualMode, setManualMode] = useState(false);
   const [input, setInput] = useState("");
 
-  // ================= INITIAL CHATS =================
+  // ================= CONTACT LIST (FROM STORAGE LATER) =================
+  const contacts: Contact[] = useMemo(
+    () => [
+      { id: 1, name: "Ali Raza" },
+      { id: 2, name: "Sara Khan" },
+      { id: 3, name: "John Doe" },
+    ],
+    []
+  );
+
+  // ================= CHATS =================
   const [chats, setChats] = useState<Chat[]>([
-    { id: 1, name: "Ali Raza", lastMessage: "Hi, I need help with pricing" },
-    { id: 2, name: "Sara Khan", lastMessage: "Is this available?" },
-    { id: 3, name: "John Doe", lastMessage: "Tell me more about your service" },
+    { id: 1, contactId: 1, name: "Ali Raza", lastMessage: "Hi" },
+    { id: 2, contactId: 2, name: "Sara Khan", lastMessage: "Is this available?" },
   ]);
 
   const [messagesMap, setMessagesMap] = useState<Record<number, Message[]>>({
-    1: [
-      { id: 1, sender: "user", text: "Hi" },
-      { id: 2, sender: "bot", text: "Hello! How can I assist you?" },
-    ],
-    2: [
-      { id: 1, sender: "user", text: "Is this available?" },
-      { id: 2, sender: "bot", text: "Yes, it is available." },
-    ],
-    3: [
-      { id: 1, sender: "user", text: "Tell me more" },
-      { id: 2, sender: "bot", text: "Sure, here's everything you need." },
-    ],
+    1: [{ id: 1, sender: "user", text: "Hi" }],
+    2: [{ id: 1, sender: "user", text: "Is this available?" }],
   });
+
+  // ================= CONTACT PICKER MODAL =================
+  const [showContacts, setShowContacts] = useState(false);
 
   const currentMessages = selectedChat
     ? messagesMap[selectedChat.id] || []
     : [];
 
-  // ================= CREATE NEW CHAT =================
-  const createNewChat = () => {
-    const newId = Date.now();
+  // ================= CREATE CHAT FROM CONTACT =================
+  const startChatWithContact = (contact: Contact) => {
+    const existing = chats.find((c) => c.contactId === contact.id);
+
+    if (existing) {
+      setSelectedChat(existing);
+      setShowContacts(false);
+      return;
+    }
 
     const newChat: Chat = {
-      id: newId,
-      name: "New Contact",
+      id: Date.now(),
+      contactId: contact.id,
+      name: contact.name,
       lastMessage: "No messages yet",
     };
 
@@ -59,35 +74,28 @@ export default function ConversationsPage() {
 
     setMessagesMap((prev) => ({
       ...prev,
-      [newId]: [],
+      [newChat.id]: [],
     }));
 
     setSelectedChat(newChat);
+    setShowContacts(false);
   };
 
   // ================= SEND MESSAGE =================
   const sendMessage = () => {
     if (!selectedChat || !input.trim()) return;
 
-    const newMessage: Message = {
+    const msg: Message = {
       id: Date.now(),
       sender: "user",
       text: input,
     };
 
-    const updatedMessages = {
-      ...messagesMap,
-      [selectedChat.id]: [
-        ...(messagesMap[selectedChat.id] || []),
-        newMessage,
-      ],
-    };
+    setMessagesMap((prev) => ({
+      ...prev,
+      [selectedChat.id]: [...(prev[selectedChat.id] || []), msg],
+    }));
 
-    setMessagesMap(updatedMessages);
-
-    setInput("");
-
-    // update chat preview
     setChats((prev) =>
       prev.map((c) =>
         c.id === selectedChat.id
@@ -96,37 +104,35 @@ export default function ConversationsPage() {
       )
     );
 
-    // BOT REPLY (only in bot mode)
+    setInput("");
+
     if (!manualMode) {
       setTimeout(() => {
-        const botReply: Message = {
+        const botMsg: Message = {
           id: Date.now() + 1,
           sender: "bot",
-          text: "🤖 AI response will connect here later",
+          text: "🤖 AI reply placeholder",
         };
 
         setMessagesMap((prev) => ({
           ...prev,
-          [selectedChat.id]: [
-            ...(prev[selectedChat.id] || []),
-            botReply,
-          ],
+          [selectedChat.id]: [...(prev[selectedChat.id] || []), botMsg],
         }));
       }, 700);
     }
   };
 
   return (
-    <div className="container-fluid py-3" style={{ color: "var(--text)" }}>
+    <div className="container-fluid py-3">
 
       {/* HEADER */}
-      <div className="d-flex justify-content-between align-items-center mb-3 px-2">
-        <h5 className="mb-0">Conversations</h5>
+      <div className="d-flex justify-content-between mb-3">
+        <h5>Conversations</h5>
 
-        {/* FIXED + NEW BUTTON */}
+        {/* FIXED FLOW */}
         <button
-          onClick={createNewChat}
-          className="btn btn-primary btn-sm rounded-pill px-3"
+          onClick={() => setShowContacts(true)}
+          className="btn btn-primary btn-sm rounded-pill"
         >
           + New
         </button>
@@ -135,26 +141,16 @@ export default function ConversationsPage() {
       <div className="row">
 
         {/* CHAT LIST */}
-        <div className="col-12 col-md-4 col-lg-3">
-          <div
-            style={{
-              background: "var(--card)",
-              border: "1px solid var(--border)",
-              borderRadius: 14,
-              overflow: "hidden",
-            }}
-          >
+        <div className="col-md-4">
+          <div className="border rounded p-2">
             {chats.map((chat) => (
               <div
                 key={chat.id}
                 onClick={() => setSelectedChat(chat)}
-                style={{
-                  padding: "12px 14px",
-                  cursor: "pointer",
-                  borderBottom: "1px solid var(--border)",
-                }}
+                className="p-2 border-bottom"
+                style={{ cursor: "pointer" }}
               >
-                <div style={{ fontWeight: 600 }}>{chat.name}</div>
+                <b>{chat.name}</b>
                 <div style={{ fontSize: 12, opacity: 0.6 }}>
                   {chat.lastMessage}
                 </div>
@@ -163,183 +159,153 @@ export default function ConversationsPage() {
           </div>
         </div>
 
-        {/* EMPTY STATE */}
-        <div className="d-none d-md-flex col-md-8 col-lg-9 align-items-center justify-content-center">
-          {!selectedChat && (
-            <div style={{ opacity: 0.6, textAlign: "center" }}>
-              <h5>Select a conversation</h5>
-              <p>Open a chat or create a new one</p>
-            </div>
-          )}
+        {/* EMPTY */}
+        <div className="col-md-8 d-none d-md-flex align-items-center justify-content-center">
+          {!selectedChat && <div>Select a chat</div>}
         </div>
       </div>
 
-      {/* ================= MODAL ================= */}
+      {/* ================= CHAT MODAL ================= */}
       {selectedChat && (
-        <>
-          {/* BACKDROP (FIXED Z-INDEX) */}
-          <div
-            onClick={() => setSelectedChat(null)}
-            style={{
-              position: "fixed",
-              inset: 0,
-              background: "rgba(0,0,0,0.35)",
-              zIndex: 9998,
-            }}
-          />
-
-          {/* MODAL (FIXED OVERLAY ISSUE) */}
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.4)",
+            zIndex: 9998,
+          }}
+        >
           <div
             style={{
-              position: "fixed",
+              position: "absolute",
               top: "50%",
               left: "50%",
               transform: "translate(-50%, -50%)",
-              width: "92%",
-              maxWidth: 900,
+              width: "90%",
+              maxWidth: 850,
               height: "85vh",
-              background: "var(--card)",
-              border: "1px solid var(--border)",
-              borderRadius: 16,
+              background: "#fff",
+              borderRadius: 12,
               display: "flex",
               flexDirection: "column",
-              zIndex: 9999, // 🔥 ABOVE EVERYTHING INCLUDING HEADER
-              overflow: "hidden",
+              zIndex: 9999,
             }}
           >
 
             {/* HEADER */}
-            <div
-              style={{
-                padding: 12,
-                borderBottom: "1px solid var(--border)",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
-              <div style={{ fontWeight: 600 }}>
-                {selectedChat.name}
-              </div>
+            <div className="p-2 border-bottom d-flex justify-content-between">
+              <b>{selectedChat.name}</b>
 
-              <div className="d-flex gap-2 align-items-center">
-
-                <button
-                  onClick={() => setManualMode((p) => !p)}
-                  className={`btn btn-sm rounded-pill px-3 ${
-                    manualMode ? "btn-danger" : "btn-success"
-                  }`}
-                >
-                  {manualMode ? "Manual" : "Bot"}
-                </button>
-
-                <button
-                  onClick={() => setSelectedChat(null)}
-                  className="btn btn-sm btn-outline-secondary rounded-pill"
-                >
-                  ✕
-                </button>
-
-              </div>
+              <button
+                onClick={() => setManualMode((p) => !p)}
+                className={`btn btn-sm ${
+                  manualMode ? "btn-danger" : "btn-success"
+                }`}
+              >
+                {manualMode ? "Manual" : "Bot"}
+              </button>
             </div>
 
             {/* MESSAGES */}
-            <div
-              style={{
-                flex: 1,
-                padding: 14,
-                overflowY: "auto",
-                display: "flex",
-                flexDirection: "column",
-                gap: 10,
-              }}
-            >
-              {currentMessages.map((msg) => (
+            <div className="flex-grow-1 p-3 overflow-auto">
+              {currentMessages.map((m) => (
                 <div
-                  key={msg.id}
+                  key={m.id}
                   style={{
-                    display: "flex",
-                    justifyContent:
-                      msg.sender === "user"
-                        ? "flex-end"
-                        : "flex-start",
+                    textAlign: m.sender === "user" ? "right" : "left",
+                    marginBottom: 8,
                   }}
                 >
-                  <div
+                  <span
                     style={{
-                      padding: "10px 12px",
-                      borderRadius: 14,
-                      maxWidth: "70%",
+                      padding: "8px 10px",
+                      borderRadius: 10,
+                      display: "inline-block",
                       background:
-                        msg.sender === "user"
-                          ? "#0d6efd"
-                          : "transparent",
-                      color:
-                        msg.sender === "user"
-                          ? "#fff"
-                          : "var(--text)",
-                      border:
-                        msg.sender === "user"
-                          ? "none"
-                          : "1px solid var(--border)",
+                        m.sender === "user" ? "#0d6efd" : "#eee",
+                      color: m.sender === "user" ? "#fff" : "#000",
                     }}
                   >
-                    {msg.text}
-                  </div>
+                    {m.text}
+                  </span>
                 </div>
               ))}
             </div>
 
             {/* INPUT */}
-            <div
-              style={{
-                padding: 12,
-                borderTop: "1px solid var(--border)",
-                display: "flex",
-                gap: 10,
-                alignItems: "center",
-              }}
-            >
+            <div className="p-2 border-top d-flex gap-2">
               <input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 disabled={!manualMode}
+                className="form-control"
                 placeholder={
                   manualMode
-                    ? "Type message..."
-                    : "Switch to Manual Mode"
+                    ? "Type..."
+                    : "Switch to Manual mode"
                 }
-                style={{
-                  flex: 1,
-                  padding: "10px 14px",
-                  borderRadius: 999,
-                  border: "1px solid var(--border)",
-                  background: "var(--card)",
-                  color: "var(--text)",
-                }}
               />
 
               <button
                 onClick={sendMessage}
                 disabled={!manualMode}
-                style={{
-                  width: 42,
-                  height: 42,
-                  borderRadius: "50%",
-                  border: "none",
-                  background: manualMode ? "#0d6efd" : "#999",
-                  color: "#fff",
-                  fontSize: 16,
-                  cursor: manualMode ? "pointer" : "not-allowed",
-                }}
+                className="btn btn-primary"
               >
                 ➤
               </button>
             </div>
-
           </div>
-        </>
+        </div>
       )}
+
+      {/* ================= CONTACT PICKER MODAL ================= */}
+      {showContacts && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.4)",
+            zIndex: 10000,
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              width: "300px",
+              background: "#fff",
+              borderRadius: 10,
+              padding: 10,
+            }}
+          >
+            <h6>Select Contact</h6>
+
+            {contacts.map((c) => (
+              <div
+                key={c.id}
+                onClick={() => startChatWithContact(c)}
+                style={{
+                  padding: 8,
+                  borderBottom: "1px solid #ddd",
+                  cursor: "pointer",
+                }}
+              >
+                {c.name}
+              </div>
+            ))}
+
+            <button
+              onClick={() => setShowContacts(false)}
+              className="btn btn-sm btn-secondary mt-2 w-100"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
