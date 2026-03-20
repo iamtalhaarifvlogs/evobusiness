@@ -1,15 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
 import { getContacts } from "@/app/lib/storage";
 
-type Contact = {
-  id: number;
-  name: string;
-  phone?: string;
-};
-
+// ================= TYPES =================
 type Chat = {
   id: number;
   contactId: number;
@@ -17,83 +11,95 @@ type Chat = {
   lastMessage: string;
 };
 
+type Contact = {
+  id: number;
+  name: string;
+};
+
 type Message = {
   id: number;
-  sender: "bot" | "user";
+  sender: "user" | "bot";
   text: string;
 };
 
-const CHATS_KEY = "chats";
-const MESSAGES_KEY = "chat_messages";
+// ================= STORAGE KEYS =================
+const CHAT_KEY = "chats";
+const MESSAGE_KEY = "messages";
 
-// ================= SAFE STORAGE =================
-const safeGet = <T,>(key: string, fallback: T): T => {
-  if (typeof window === "undefined") return fallback;
-
-  try {
-    const data = localStorage.getItem(key);
-    if (!data) return fallback;
-    return JSON.parse(data);
-  } catch {
-    return fallback;
-  }
-};
-
-const safeSet = (key: string, value: any) => {
-  if (typeof window === "undefined") return;
-
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch {}
-};
-
+// ================= COMPONENT =================
 export default function ConversationsPage() {
-  const searchParams = useSearchParams();
-  const contactIdFromUrl = searchParams.get("contactId");
-
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [chats, setChats] = useState<Chat[]>([]);
   const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
-  const [messagesMap, setMessagesMap] = useState<Record<number, Message[]>>(
-    {}
-  );
 
   const [manualMode, setManualMode] = useState(false);
   const [input, setInput] = useState("");
   const [showContacts, setShowContacts] = useState(false);
 
-  // ================= LOAD INITIAL DATA =================
+  const [messagesMap, setMessagesMap] = useState<
+    Record<number, Message[]>
+  >({});
+
+  // ================= LOAD EVERYTHING =================
   useEffect(() => {
     setContacts(getContacts());
-    setChats(safeGet<Chat[]>(CHATS_KEY, []));
-    setMessagesMap(safeGet<Record<number, Message[]>>(MESSAGES_KEY, {}));
+
+    const storedChats = JSON.parse(localStorage.getItem(CHAT_KEY) || "[]");
+    const storedMessages = JSON.parse(localStorage.getItem(MESSAGE_KEY) || "{}");
+
+    setChats(storedChats);
+    setMessagesMap(storedMessages);
+
+    // 🔥 HANDLE CONTACT → CHAT HANDOFF
+    const selectedContactId = localStorage.getItem("openChatContactId");
+
+    if (selectedContactId) {
+      const contactId = Number(selectedContactId);
+      const contact = getContacts().find((c) => c.id === contactId);
+
+      if (contact) {
+        const existing = storedChats.find((c: Chat) => c.contactId === contact.id);
+
+        if (existing) {
+          setSelectedChat(existing);
+        } else {
+          const newChat: Chat = {
+            id: Date.now(),
+            contactId: contact.id,
+            name: contact.name,
+            lastMessage: "No messages yet",
+          };
+
+          const updatedChats = [newChat, ...storedChats];
+
+          setChats(updatedChats);
+          localStorage.setItem(CHAT_KEY, JSON.stringify(updatedChats));
+
+          setMessagesMap((prev) => ({
+            ...prev,
+            [newChat.id]: [],
+          }));
+
+          setSelectedChat(newChat);
+        }
+      }
+
+      localStorage.removeItem("openChatContactId");
+    }
   }, []);
 
   // ================= PERSIST =================
   useEffect(() => {
-    safeSet(CHATS_KEY, chats);
+    localStorage.setItem(CHAT_KEY, JSON.stringify(chats));
   }, [chats]);
 
   useEffect(() => {
-    safeSet(MESSAGES_KEY, messagesMap);
+    localStorage.setItem(MESSAGE_KEY, JSON.stringify(messagesMap));
   }, [messagesMap]);
 
   const currentMessages = selectedChat
     ? messagesMap[selectedChat.id] || []
     : [];
-
-  // ================= AUTO OPEN FROM CONTACTS PAGE =================
-  useEffect(() => {
-    if (!contactIdFromUrl || contacts.length === 0) return;
-
-    const contact = contacts.find(
-      (c) => c.id === Number(contactIdFromUrl)
-    );
-
-    if (contact) {
-      startChatWithContact(contact);
-    }
-  }, [contactIdFromUrl, contacts]);
 
   // ================= START CHAT =================
   const startChatWithContact = (contact: Contact) => {
@@ -113,6 +119,7 @@ export default function ConversationsPage() {
     };
 
     setChats((prev) => [newChat, ...prev]);
+
     setMessagesMap((prev) => ({
       ...prev,
       [newChat.id]: [],
@@ -139,9 +146,7 @@ export default function ConversationsPage() {
 
     setChats((prev) =>
       prev.map((c) =>
-        c.id === selectedChat.id
-          ? { ...c, lastMessage: input }
-          : c
+        c.id === selectedChat.id ? { ...c, lastMessage: input } : c
       )
     );
 
@@ -150,7 +155,7 @@ export default function ConversationsPage() {
     if (!manualMode) {
       setTimeout(() => {
         const botMsg: Message = {
-          id: Date.now() + 1,
+          id: Date.now(),
           sender: "bot",
           text: "🤖 AI response placeholder",
         };
@@ -159,10 +164,11 @@ export default function ConversationsPage() {
           ...prev,
           [selectedChat.id]: [...(prev[selectedChat.id] || []), botMsg],
         }));
-      }, 700);
+      }, 600);
     }
   };
 
+  // ================= UI =================
   return (
     <div className="container-fluid py-3">
 
@@ -196,43 +202,18 @@ export default function ConversationsPage() {
             ))}
           </div>
         </div>
-
-        <div className="col-md-8 d-none d-md-flex align-items-center justify-content-center">
-          {!selectedChat && <div>Select a conversation</div>}
-        </div>
       </div>
 
       {/* ================= CHAT MODAL ================= */}
       {selectedChat && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.4)",
-            zIndex: 9999,
-          }}
-        >
-          <div
-            style={{
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%, -50%)",
-              width: "90%",
-              maxWidth: 850,
-              height: "85vh",
-              background: "#fff",
-              borderRadius: 12,
-              display: "flex",
-              flexDirection: "column",
-              overflow: "hidden",
-            }}
-          >
+        <div style={overlay}>
+          <div style={modal}>
+
             {/* HEADER */}
             <div className="p-2 border-bottom d-flex justify-content-between align-items-center">
               <b>{selectedChat.name}</b>
 
-              <div className="d-flex gap-2">
+              <div className="d-flex gap-2 align-items-center">
                 <button
                   onClick={() => setManualMode((p) => !p)}
                   className={`btn btn-sm ${
@@ -242,21 +223,10 @@ export default function ConversationsPage() {
                   {manualMode ? "Manual" : "Bot"}
                 </button>
 
+                {/* CLOSE BUTTON */}
                 <button
-                  onClick={() => {
-                    setSelectedChat(null);
-                    setManualMode(false);
-                  }}
-                  className="btn btn-light btn-sm"
-                  style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: "50%",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontWeight: "bold",
-                  }}
+                  onClick={() => setSelectedChat(null)}
+                  className="btn btn-sm btn-outline-secondary"
                 >
                   ✕
                 </button>
@@ -270,13 +240,13 @@ export default function ConversationsPage() {
                   key={m.id}
                   style={{
                     textAlign: m.sender === "user" ? "right" : "left",
-                    marginBottom: 8,
+                    marginBottom: 10,
                   }}
                 >
                   <span
                     style={{
                       display: "inline-block",
-                      padding: "8px 12px",
+                      padding: "10px 14px",
                       borderRadius: 12,
                       background:
                         m.sender === "user" ? "#0d6efd" : "#eee",
@@ -296,21 +266,23 @@ export default function ConversationsPage() {
                 onChange={(e) => setInput(e.target.value)}
                 disabled={!manualMode}
                 className="form-control"
-                placeholder={manualMode ? "Type message..." : "Switch to Manual"}
+                placeholder={
+                  manualMode ? "Type message..." : "Bot is active..."
+                }
               />
 
+              {/* ROUND SEND BUTTON */}
               <button
                 onClick={sendMessage}
                 disabled={!manualMode}
-                className="btn btn-primary"
                 style={{
                   width: 42,
                   height: 42,
                   borderRadius: "50%",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  padding: 0,
+                  border: "none",
+                  background: "#0d6efd",
+                  color: "#fff",
+                  fontSize: 18,
                 }}
               >
                 ➤
@@ -320,43 +292,25 @@ export default function ConversationsPage() {
         </div>
       )}
 
-      {/* CONTACT SELECTOR */}
+      {/* ================= CONTACT SELECTOR ================= */}
       {showContacts && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.4)",
-            zIndex: 10000,
-          }}
-        >
-          <div
-            style={{
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%, -50%)",
-              width: 320,
-              background: "#fff",
-              borderRadius: 10,
-              padding: 12,
-            }}
-          >
+        <div style={overlay}>
+          <div style={contactModal}>
             <h6>Select Contact</h6>
 
-            {contacts.map((c) => (
-              <div
-                key={c.id}
-                onClick={() => startChatWithContact(c)}
-                style={{
-                  padding: 8,
-                  borderBottom: "1px solid #eee",
-                  cursor: "pointer",
-                }}
-              >
-                {c.name}
-              </div>
-            ))}
+            {contacts.length === 0 ? (
+              <p>No contacts found</p>
+            ) : (
+              contacts.map((c) => (
+                <div
+                  key={c.id}
+                  onClick={() => startChatWithContact(c)}
+                  style={contactItem}
+                >
+                  {c.name}
+                </div>
+              ))
+            )}
 
             <button
               onClick={() => setShowContacts(false)}
@@ -367,6 +321,46 @@ export default function ConversationsPage() {
           </div>
         </div>
       )}
+
     </div>
   );
 }
+
+// ================= STYLES =================
+const overlay: React.CSSProperties = {
+  position: "fixed",
+  inset: 0,
+  background: "rgba(0,0,0,0.4)",
+  zIndex: 9999,
+};
+
+const modal: React.CSSProperties = {
+  position: "absolute",
+  top: "50%",
+  left: "50%",
+  transform: "translate(-50%, -50%)",
+  width: "90%",
+  maxWidth: 850,
+  height: "85vh",
+  background: "var(--card)",
+  borderRadius: 12,
+  display: "flex",
+  flexDirection: "column",
+};
+
+const contactModal: React.CSSProperties = {
+  position: "absolute",
+  top: "50%",
+  left: "50%",
+  transform: "translate(-50%, -50%)",
+  width: 300,
+  background: "#fff",
+  borderRadius: 10,
+  padding: 10,
+};
+
+const contactItem: React.CSSProperties = {
+  padding: 8,
+  borderBottom: "1px solid #ddd",
+  cursor: "pointer",
+};
