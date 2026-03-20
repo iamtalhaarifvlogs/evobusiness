@@ -87,12 +87,35 @@ export default function Header() {
                 overflow: "hidden",
               }}
             >
-              <div onClick={toggleTheme} style={{ padding: 12, cursor: "pointer" }}>
+              {/* THEME TOGGLE */}
+              <div
+                onClick={() => {
+                  toggleTheme();
+                  setProfileOpen(false);
+                }}
+                style={{ padding: 12, cursor: "pointer" }}
+              >
                 {theme === "light" ? "🌙 Dark Mode" : "☀️ Light Mode"}
               </div>
 
-              <div style={{ padding: 12, cursor: "pointer" }}>Reminders</div>
-              <div style={{ padding: 12, cursor: "pointer" }}>Settings</div>
+              <div style={{ padding: 12, cursor: "pointer" }}>
+                Reminders
+              </div>
+
+              {/* SETTINGS (FIXED → ROUTE LINK) */}
+              <Link
+                href="/settings"
+                onClick={() => setProfileOpen(false)}
+                style={{
+                  display: "block",
+                  padding: 12,
+                  cursor: "pointer",
+                  textDecoration: "none",
+                  color: "var(--text)",
+                }}
+              >
+                Settings
+              </Link>
             </div>
           </div>
 
