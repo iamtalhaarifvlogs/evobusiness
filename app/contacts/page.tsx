@@ -13,44 +13,32 @@ type Contact = {
 };
 
 export default function ContactsPage() {
-  // ================= STATE =================
   const [search, setSearch] = useState("");
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
 
-  // form state
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [tag, setTag] = useState("");
 
-  // success modal
   const [showSuccess, setShowSuccess] = useState(false);
-
-  // validation error
   const [error, setError] = useState("");
 
-  // ================= LOAD DATA =================
   useEffect(() => {
     setContacts(getContacts());
   }, []);
 
-  // ================= FILTER =================
   const filteredContacts = contacts.filter((c) =>
     c.name.toLowerCase().includes(search.toLowerCase())
   );
 
-  // ================= VALIDATION =================
-  const isValidEmail = (email: string) => {
-    return /\S+@\S+\.\S+/.test(email);
-  };
+  const isValidEmail = (email: string) => /\S+@\S+\.\S+/.test(email);
 
-  // ================= SAVE CONTACT =================
   const handleSave = () => {
     setError("");
 
-    // VALIDATION RULES
     if (!name || !phone || !email || !tag) {
       setError("All fields are required");
       return;
@@ -70,23 +58,17 @@ export default function ContactsPage() {
     };
 
     addContact(newContact);
+    setContacts(getContacts());
 
-    const updated = getContacts();
-    setContacts(updated);
-
-    // reset form
     setName("");
     setPhone("");
     setEmail("");
     setTag("");
 
     setShowAddModal(false);
-
-    // show success modal
     setShowSuccess(true);
   };
 
-  // ================= STYLES =================
   const cardStyle: React.CSSProperties = {
     background: "var(--card)",
     color: "var(--text)",
@@ -112,10 +94,7 @@ export default function ContactsPage() {
 
   const backdropStyle: React.CSSProperties = {
     position: "fixed",
-    top: 0,
-    left: 0,
-    width: "100%",
-    height: "100%",
+    inset: 0,
     background: "rgba(0,0,0,0.4)",
     zIndex: 1040,
   };
@@ -126,21 +105,26 @@ export default function ContactsPage() {
     border: "1px solid var(--border)",
     background: "var(--card)",
     color: "var(--text)",
+    width: "100%",
   };
 
   return (
     <div className="container-fluid py-3">
 
-      {/* HEADER */}
-      <div className="d-flex justify-content-between mb-3">
-        <h5>Contacts</h5>
+      {/* HEADER (FIXED RESPONSIVE) */}
+      <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2 mb-3">
 
-        <div className="d-flex gap-2">
+        <h5 className="mb-0">Contacts</h5>
+
+        <div className="d-flex flex-column flex-sm-row gap-2 w-100 w-md-auto">
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search..."
-            style={inputStyle}
+            style={{
+              ...inputStyle,
+              maxWidth: 260,
+            }}
           />
 
           <button
@@ -150,6 +134,7 @@ export default function ContactsPage() {
             + Add
           </button>
         </div>
+
       </div>
 
       {/* CONTACTS */}
@@ -182,12 +167,7 @@ export default function ContactsPage() {
               <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" style={inputStyle} />
               <input value={tag} onChange={(e) => setTag(e.target.value)} placeholder="Tag" style={inputStyle} />
 
-              {/* ERROR MESSAGE */}
-              {error && (
-                <div style={{ color: "red", fontSize: 13 }}>
-                  {error}
-                </div>
-              )}
+              {error && <div style={{ color: "red", fontSize: 13 }}>{error}</div>}
             </div>
 
             <div style={{ padding: 15, borderTop: "1px solid var(--border)" }}>
@@ -209,7 +189,7 @@ export default function ContactsPage() {
         onClose={() => setShowSuccess(false)}
       />
 
-      {/* DETAILS MODAL (unchanged) */}
+      {/* DETAILS MODAL */}
       {selectedContact && (
         <>
           <div style={backdropStyle} onClick={() => setSelectedContact(null)} />
