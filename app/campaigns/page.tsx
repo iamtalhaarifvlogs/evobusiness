@@ -58,7 +58,7 @@ export default function CampaignsPage() {
     setTag(campaign.tag);
     setMessage(campaign.message);
     setStatus(campaign.status);
-    setAudience(campaign.tag):
+    setAudience(campaign.tag);
 
     setEditingId(campaign.id);
     setShowModal(true);
